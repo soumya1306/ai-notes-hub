@@ -99,13 +99,27 @@ body {
   box-shadow: 0 10px 30px rgba(0,0,0,1);
   border-left: 5px solid #4f46e5;
   transition: all 0.3s ease;
-  position: relative
+  position: relative;
+  animation: slideInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+@keyframes slideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .note-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 2px 40px rgba(0,0,0,0.15);
 }
+
+
 
 .note-content {
   min-height: 80px;
@@ -186,6 +200,23 @@ body {
 .empty-state p {
   font-size: 18px;
   margin-top: 10px;
+}
+
+.note-tags {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+
+.tag {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1e40af;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
 }
 
 /* Mobile responsive */

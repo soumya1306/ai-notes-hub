@@ -6,8 +6,8 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
   const [editContent, setEditContent] = useState("");
 
   const startEdit = (note) => {
-    console.log(note.id)
-    console.log(note.content)
+    console.log(note.id);
+    console.log(note.content);
     setEditingId(note.id);
     setEditContent(note.content);
   };
@@ -17,7 +17,6 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
     setEditingId(null);
     setEditContent("");
   };
-  
 
   if (!notes.length) {
     return <div className="empty-state"> No notes yet. Add one above!</div>;
@@ -41,7 +40,10 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
                 >
                   Save
                 </button>
-                <button onClick={() => setEditingId(null)} className="btn btn-cancel">
+                <button
+                  onClick={() => setEditingId(null)}
+                  className="btn btn-cancel"
+                >
                   Cancel
                 </button>
               </div>
@@ -49,7 +51,18 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
           ) : (
             <div>
               <p className="note-content"> {note.content} </p>
-              <div className="note-meta">{new Date(note.createdAt).toLocaleDateString()}</div>
+              {note.tags.length ? (
+                <div className="note-tags">
+                  {note.tags.map((tag, index) => (
+                    <span key={index} className="tag">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              ) : null}
+              <div className="note-meta">
+                {new Date(note.createdAt).toLocaleDateString()}
+              </div>
               <div className="note-actions">
                 <button
                   onClick={() => startEdit(note)}

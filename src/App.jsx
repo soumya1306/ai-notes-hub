@@ -1,21 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import NoteForm from "./components/NoteForm";
 import NotesList from "./components/NoteList";
-import './App.css';
+import "./App.css";
 
 function App() {
-  const [notes, setNotes] = useState([]);
+  const [notes, setNotes] = useState(
+    JSON.parse(localStorage.getItem("ai-notes-hub")) || [],
+  );
 
-  const addNote = (content) => {
+  //saving the code in local storage
+  useEffect(() => {
+    localStorage.setItem("ai-notes-hub", JSON.stringify(notes));
+  }, [notes]);
+
+  const addNote = (content, tags) => {
     setNotes([
       ...notes,
       {
         id: Date.now(),
         content,
+        tags,
         createdAt: new Date(),
       },
     ]);
-    
   };
 
   const deleteNote = (id) => {
@@ -28,8 +35,8 @@ function App() {
     );
   };
 
-  console.log(notes)
-  
+  const sortedNotes = [...notes].sort((a, b) => b.createdAt - a.createdAt);
+
   return (
     <div className="app-container">
       <div className="header">
@@ -37,7 +44,11 @@ function App() {
       </div>
       <NoteForm onAdd={addNote} />
       <div className="notes-section">
-        <NotesList notes={notes} onDelete={deleteNote} onUpdate={updateNote} />
+        <NotesList
+          notes={sortedNotes}
+          onDelete={deleteNote}
+          onUpdate={updateNote}
+        />
       </div>
     </div>
   );
