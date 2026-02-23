@@ -1,42 +1,196 @@
-#root {
-  max-width: 1280px;
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135def, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 20px;
+}
+
+.app-container {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 2rem;
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0,0,0,1);
+  overflow: hidden;
+}
+
+.header {
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  padding: 40px 30px;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.header h1{
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 700;
+  margin-bottom: 10px;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.note-form {
+  padding: 40px 30px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.note-input{
+  width: 100%;
+  min-height: 120px;
+  padding: 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size:16px;
+  font-family: inherit;
+  resize: vertical;
+  transition: all 0.3s ease;
 }
 
-.card {
-  padding: 2em;
+.note-input:focus {
+  outline: none;
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  transform: translateY(-2px);
 }
 
-.read-the-docs {
-  color: #888;
+.add-btn {
+  width: 100%;
+  margin-top: 20px;
+  padding: 16px;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.add-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+}
+
+.add-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.notes-section {
+  padding: 40px 30px;
+}
+
+.notes-grid {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300, ifr));
+}
+
+.note-card {
+  background: white;
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0,0,0,1);
+  border-left: 5px solid #4f46e5;
+  transition: all 0.3s ease;
+  position: relative
+}
+
+.note-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 2px 40px rgba(0,0,0,0.15);
+}
+
+.note-content {
+  min-height: 80px;
+  margin-bottom: 15px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-size: 15px;
+}
+
+.note-meta {
+  color: #64748b;
+  font-size: 13px;
+  margin-bottom: 15px;
+}
+
+.note-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+}
+
+.btn-edit {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-edit:hover {
+  background: #bfdbfe;
+}
+
+.btn-delete {
+  background: #fee2e2;
+  color: #dc2626
+}
+
+.btn-delete:hover {
+  background: #fecaca;
+}
+
+.btn-save {
+  background: #dcfce7;
+  color: #166534
+}
+
+.btn-save:hover {
+  background: #bbf7d0;
+  color: #6b7280;
+}
+
+.btn-cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.btn-cancel:hover {
+  background: #e5e7eb;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.empty-state p {
+  font-size: 18px;
+  margin-top: 10px;
+}
+
+/* Mobile responsive */
+@media (max-width: 640px) {
+  body { padding: 10px; }
+  .app-container { margin: 10px; border-radius: 16px; }
+  .notes-grid { grid-template-columns: 1fr; }
 }
