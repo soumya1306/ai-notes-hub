@@ -24,6 +24,9 @@ export default function NoteForm({ onAdd }) {
         className="note-input"
         maxLength={500}
       />
+      <div style={{ marginTop: "8px", fontSize: "13px", color: "#64748b" }}>
+        {content.length}/500 characters
+      </div>
       <input
         type="text"
         placeholder="Tags: frontend, react, css (comma separated)"
