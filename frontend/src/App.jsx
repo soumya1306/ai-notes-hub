@@ -2,40 +2,42 @@ import { useEffect, useState } from "react";
 import NoteForm from "./components/NoteForm";
 import NotesList from "./components/NoteList";
 import "./App.css";
+import { notesApi } from "./api/notesAPi";
 
 function App() {
-  const [notes, setNotes] = useState(
-    JSON.parse(localStorage.getItem("ai-notes-hub")) || [],
-  );
+  const [notes, setNotes] = useState();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   //saving the code in local storage
   useEffect(() => {
-    localStorage.setItem("ai-notes-hub", JSON.stringify(notes));
-  }, [notes]);
+    notesApi
+      .getNotes()
+      .then(setNotes)
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
 
-  const addNote = (content, tags) => {
-    setNotes([
-      ...notes,
-      {
-        id: Date.now(),
-        content,
-        tags,
-        createdAt: new Date(),
-      },
-    ]);
+  const addNote = async (content, tags) => {
+    const newNote = await notesApi.createNote(content, tags);
+    setNotes((prev) => [newNote, ...prev]);
   };
 
-  const deleteNote = (id) => {
-    setNotes(notes.filter((note) => note.id !== id));
+  const deleteNote = async (id) => {
+    await notesApi.deleteNote(id);
+    setNotes((prev) => prev.filter((note) => note.id !== id));
   };
 
-  const updateNote = (id, content) => {
+  const updateNote = async (id, content, tags = []) => {
+    const updatedNote = await notesApi.updateNote(id, content, tags);
+
     setNotes(
-      notes.map((note) => (note.id === id ? { ...note, content } : note)),
+      prev => prev.map(note => note.id === id ? updatedNote : note),
     );
   };
 
-  const sortedNotes = [...notes].sort((a, b) => b.createdAt - a.createdAt);
+  if (loading) return <div className="app-container"><p>Loading...</p></div>;
+  if (error) return <div className="app-container"><p style={{color:red}}>{error}</p></div>
 
   return (
     <div className="app-container">
@@ -45,7 +47,7 @@ function App() {
       <NoteForm onAdd={addNote} />
       <div className="notes-section">
         <NotesList
-          notes={sortedNotes}
+          notes={notes}
           onDelete={deleteNote}
           onUpdate={updateNote}
         />
