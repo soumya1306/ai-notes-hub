@@ -61,7 +61,7 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
                 </div>
               ) : null}
               <div className="note-meta">
-                {new Date(note.createdAt).toLocaleDateString()}
+                {new Date(note.created_at).toLocaleDateString()}
               </div>
               <div className="note-actions">
                 <button

@@ -1,4 +1,4 @@
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 export const notesApi = {
   async getNotes() {
@@ -25,7 +25,7 @@ export const notesApi = {
       body: JSON.stringify({ content, tags }),
     });
 
-    if(!res.ok) throw new Error("Failed to create");
+    if(!res.ok) throw new Error("Failed to update");
     return res.json();
   },
 

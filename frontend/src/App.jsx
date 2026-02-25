@@ -5,7 +5,7 @@ import "./App.css";
 import { notesApi } from "./api/notesAPi";
 
 function App() {
-  const [notes, setNotes] = useState();
+  const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -37,7 +37,7 @@ function App() {
   };
 
   if (loading) return <div className="app-container"><p>Loading...</p></div>;
-  if (error) return <div className="app-container"><p style={{color:red}}>{error}</p></div>
+  if (error) return <div className="app-container"><p style={{color: "red"}}>{error}</p></div>
 
   return (
     <div className="app-container">
