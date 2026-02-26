@@ -1,5 +1,5 @@
 import { createContext, useCallback, useState, useContext, useMemo } from "react";
-import { authApi } from "../api/authAPI";
+import { authApi } from "../api/authApi";
 
 
 const AuthContext = createContext();
