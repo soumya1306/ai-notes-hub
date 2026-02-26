@@ -77,7 +77,7 @@ export const notesApi = {
   async deleteNote(id, refreshAccessToken) {
     const res = await authFetch(`${API_BASE}/notes/${id}`, {
       method: "DELETE",
-    });
+    }, refreshAccessToken);
     if (!res.ok) throw new Error("Failed to delete");
   },
 };
