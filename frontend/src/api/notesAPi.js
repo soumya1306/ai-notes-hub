@@ -46,36 +46,36 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
 };
 
 export const notesApi = {
-  async getNotes() {
-    const res = await fetch(`${API_BASE}/notes`);
+  async getNotes(refreshAccessToken) {
+    const res = await authFetch(`${API_BASE}/notes`, {}, refreshAccessToken);
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();
   },
 
-  async createNote(content, tags) {
-    const res = await fetch(`${API_BASE}/notes`, {
+  async createNote(content, tags, refreshAccessToken) {
+    const res = await authFetch(`${API_BASE}/notes`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content, tags }),
-    });
+    }, refreshAccessToken);
 
     if (!res.ok) throw new Error("Failed to create");
     return res.json();
   },
 
-  async updateNote(id, content, tags) {
-    const res = await fetch(`${API_BASE}/notes/${id}`, {
+  async updateNote(id, content, tags, refreshAccessToken) {
+    const res = await authFetch(`${API_BASE}/notes/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content, tags }),
-    });
+    }, refreshAccessToken);
 
     if (!res.ok) throw new Error("Failed to update");
     return res.json();
   },
 
-  async deleteNote(id) {
-    const res = await fetch(`${API_BASE}/notes/${id}`, {
+  async deleteNote(id, refreshAccessToken) {
+    const res = await authFetch(`${API_BASE}/notes/${id}`, {
       method: "DELETE",
     });
     if (!res.ok) throw new Error("Failed to delete");

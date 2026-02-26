@@ -3,7 +3,7 @@ import {useAuth} from "./context/AuthContext";
 import NoteForm from "./components/NoteForm";
 import NotesList from "./components/NoteList";
 import "./App.css";
-import { notesApi } from "./api/notesApi";
+import { notesApi } from "./api/notesAPi";
 import RegisterForm from "./components/RegisterForm";
 import LoginForm from "./components/LoginForm";
 
@@ -20,23 +20,23 @@ function App() {
       return;
     }
     notesApi.getNotes(refreshAccessToken)
-      .then(setNotes)
+      .then((fetchedNotes) => setNotes(Array.isArray(fetchedNotes) ? fetchedNotes : []))
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [isAuthenticated, refreshAccessToken]);
 
   const addNote = async (content, tags) => {
-    const newNote = await notesApi.createNote(content, tags);
+    const newNote = await notesApi.createNote(content, tags, refreshAccessToken);
     setNotes((prev) => [newNote, ...prev]);
   };
 
   const deleteNote = async (id) => {
-    await notesApi.deleteNote(id);
+    await notesApi.deleteNote(id, refreshAccessToken);
     setNotes((prev) => prev.filter((note) => note.id !== id));
   };
 
   const updateNote = async (id, content, tags = []) => {
-    const updatedNote = await notesApi.updateNote(id, content, tags);
+    const updatedNote = await notesApi.updateNote(id, content, tags, refreshAccessToken);
 
     setNotes(
       prev => prev.map(note => note.id === id ? updatedNote : note),
@@ -58,6 +58,7 @@ function App() {
     <div className="app-container">
       <div className="header">
         <h1>AI Notes Hub</h1>
+        <button className="logout-btn" onClick={logout}>Sign Out</button>
       </div>
       <NoteForm onAdd={addNote} />
       <div className="notes-section">
