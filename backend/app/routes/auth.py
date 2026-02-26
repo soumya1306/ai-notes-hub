@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-from database import get_db
-from models import User
-from schemas import UserCreate, UserLogin, TokenResponse, RefreshRequest
-from auth import hash_password, verify_password, create_access_token, create_refresh_token,verify_token
+from app.database import get_db
+from app.models.models import User
+from app.schemas.schemas import UserCreate, UserLogin, TokenResponse, RefreshRequest
+from app.core.auth import hash_password, verify_password, create_access_token, create_refresh_token,verify_token
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
@@ -40,9 +40,6 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
   
   user_id = verify_token(payload.refresh_token, "refresh")
   
-  if not user_id:
-    raise HTTPException(status_code=401, detail="Invalid refresh token")
-  
   user = db.query(User).filter(User.id == user_id).first()
   
   if not user or user.refresh_token != payload.refresh_token:
@@ -59,9 +56,6 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
 def logout(payload: RefreshRequest, db: Session = Depends(get_db)):
   
   user_id = verify_token(payload.refresh_token, "refresh")
-  
-  if not user_id:
-    raise HTTPException(status_code=401, detail="Invalid refresh token")
   
   user = db.query(User).filter(User.id == user_id).first()
   

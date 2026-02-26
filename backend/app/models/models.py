@@ -7,11 +7,11 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-from sqlalchemy import String, ARRAY, DateTime
+from sqlalchemy import String, ARRAY, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
 
-from database import Base
+from app.database import Base
 
 class User(Base):
   __tablename__ = "users"
@@ -33,3 +33,5 @@ class Note(Base):
   # Use server_default or a callable (no parens) for timestamps
   created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
   updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+  
+  user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)

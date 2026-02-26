@@ -1,8 +1,7 @@
 #Added comments to understand why this?
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, DeclarativeBase
 import os
 
 load_dotenv()
@@ -16,7 +15,8 @@ engine = create_engine(DATABASE_URL) # type: ignore
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
 #This creates a base class. When you create your data models (like a User or Product class), they will inherit from Base so SQLAlchemy knows they are mapped to database tables.
-Base = declarative_base()
+class Base(DeclarativeBase):
+  pass
 
 
 """

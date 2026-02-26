@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
-from models import Note
-from schemas import NoteCreate
+from app.models.models import Note
+from app.schemas.schemas import NoteCreate
 from datetime import datetime, timezone
 
 def get_notes(db: Session, user_id: str):
