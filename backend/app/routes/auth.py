@@ -79,6 +79,8 @@ oauth.register(
   name="google",
   server_metadata_url="https://accounts.google.com/.well-known/openid-configuration",
   client_kwargs={"scope": "openid email profile"},
+  client_id=os.getenv("GOOGLE_CLIENT_ID"),
+  client_secret=os.getenv("GOOGLE_CLIENT_SECRET")
 )
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
@@ -125,5 +127,5 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
   db.commit()
   
   # Redirect to frontend with tokens as query params (or you can set cookies instead)
-  redirect_url = f"{FRONTEND_URL}/oauth-success?access_token={access}&refresh_token={refresh}"
+  redirect_url = f"{FRONTEND_URL}/oauth-callback?access_token={access}&refresh_token={refresh}"
   return RedirectResponse(url=redirect_url)
