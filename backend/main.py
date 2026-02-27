@@ -1,5 +1,8 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 from app.database import engine, Base
 from app.routes import notes, auth
@@ -9,6 +12,8 @@ load_dotenv()
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Notes Hub", version="3.0.0")
+
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY","your_secret_key_here"))
 
 app.add_middleware(
     CORSMiddleware,

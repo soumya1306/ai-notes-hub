@@ -18,7 +18,8 @@ class User(Base):
   
   id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
   email: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-  hashed_password: Mapped[str] = mapped_column(String, nullable=False)
+  hashed_password: Mapped[str] = mapped_column(String, nullable=True)
+  google_id: Mapped[Optional[str]] = mapped_column(String, unique=True, nullable=True)
   refresh_token: Mapped[Optional[str]] = mapped_column(String, nullable=True)
   
 
