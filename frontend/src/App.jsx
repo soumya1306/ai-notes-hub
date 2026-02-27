@@ -45,14 +45,6 @@ function NotesPage() {
     );
   };
 
-  if (!isAuthenticated) {
-    return showRegister ? (
-      <RegisterForm onSwitch={() => setShowRegister(false)} />
-    ) : (
-      <LoginForm onSwitch={() => setShowRegister(true)} />
-    );
-  }
-
   if (loading) return <div className="app-container"><p>Loading...</p></div>;
   if (error) return <div className="app-container"><p style={{color: "red"}}>{error}</p></div>
 
