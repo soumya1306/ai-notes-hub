@@ -1,8 +1,10 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
-export default function RegisterForm({ onSwitch }) {
-  const {register} = useAuth();
+export default function RegisterForm() {
+  const { register } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -50,9 +52,7 @@ export default function RegisterForm({ onSwitch }) {
         </form>
         <p className="auth-switch">
           Already have an account?{" "}
-          <span onClick={onSwitch}>
-            Sign In
-          </span>
+          <span onClick={() => navigate("/login")}>Sign In</span>
         </p>
       </div>
     </div>

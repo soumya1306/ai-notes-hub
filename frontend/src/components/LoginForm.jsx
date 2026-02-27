@@ -1,9 +1,11 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
+import { loginWithGoogle } from "../api/authApi";
 
-
-export default function LoginForm({ onSwitch }) {
-  const {login} = useAuth();
+export default function LoginForm() {
+  const { login } = useAuth();
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
@@ -49,13 +51,17 @@ export default function LoginForm({ onSwitch }) {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+
+        <div className="auth-divider">or</div>
+        <button type="button" className="google-btn" onClick={loginWithGoogle}>
+          Continue with Google
+        </button>
+
         <p className="auth-switch">
           Don't have an account?{" "}
-          <span onClick={onSwitch}>
-            Register
-          </span>
+          <span onClick={() => navigate("/register")}>Register</span>
         </p>
       </div>
     </div>
-    );
+  );
 }

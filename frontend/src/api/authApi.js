@@ -50,3 +50,7 @@ export const authApi = {
     });
   },
 };
+
+export function loginWithGoogle() {
+  window.location.href = `${API_BASE}/auth/google/login/`;
+}

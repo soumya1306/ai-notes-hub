@@ -21,6 +21,13 @@ export function AuthProvider({ children }) {
     localStorage.setItem("refresh_token", data.refresh_token);
   }, []);
 
+  const loginWithTokens = useCallback((access_token, refresh_token) => {
+    setAccessToken(access_token);
+    setRefreshToken(refresh_token);
+    localStorage.setItem("access_token", access_token);
+    localStorage.setItem("refresh_token", refresh_token);
+  }, []);
+
   const register = useCallback(
     async (email, password) => {
       await authApi.register(email, password);
@@ -53,11 +60,12 @@ export function AuthProvider({ children }) {
       accessToken,
       isAuthenticated: !!accessToken,
       login,
+      loginWithTokens,
       register,
       logout,
       refreshAccessToken,
     }),
-    [accessToken, login, register, logout, refreshAccessToken],
+    [accessToken, login, loginWithTokens, register, logout, refreshAccessToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

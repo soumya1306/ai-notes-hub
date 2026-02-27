@@ -1,13 +1,15 @@
 import { useEffect, useState } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import {useAuth} from "./context/AuthContext";
 import NoteForm from "./components/NoteForm";
 import NotesList from "./components/NoteList";
 import "./App.css";
 import { notesApi } from "./api/notesAPi";
 import RegisterForm from "./components/RegisterForm";
+import OAuthCallback from "./components/OAuthCallback";
 import LoginForm from "./components/LoginForm";
 
-function App() {
+function NotesPage() {
   const { isAuthenticated, logout, refreshAccessToken } = useAuth();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -69,6 +71,38 @@ function App() {
         />
       </div>
     </div>
+  );
+}
+
+function ProtectedRoute({ children }) {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? children : <Navigate to="/login" replace />;
+}
+
+function App() {
+  const { isAuthenticated } = useAuth();
+
+  return (
+    <Routes>
+      <Route 
+        path="/login" 
+        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />} />
+
+      <Route 
+        path="/register" 
+        element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterForm />} />
+
+      <Route 
+        path="/oauth-callback" 
+        element={<OAuthCallback />} />
+
+      <Route 
+        path="/" 
+        element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
+      <Route 
+        path="*"
+        element={<Navigate to="/" replace />} />
+    </Routes>
   );
 }
 
