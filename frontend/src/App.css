@@ -1,11 +1,16 @@
 * {
   box-sizing: border-box;
   margin: 0;
-  padding: 0
+  padding: 0;
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   min-height: 100vh;
   padding: 20px;
@@ -22,7 +27,7 @@ body {
   background: white;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
   width: 100%;
   max-width: 420px;
 }
@@ -82,7 +87,7 @@ body {
 
 .auth-divider::before,
 .auth-divider::after {
-  content: '';
+  content: "";
   flex: 1;
   border-top: 1px solid #e2e8f0;
 }
@@ -105,7 +110,7 @@ body {
 }
 
 .google-btn:before {
-  content: '';
+  content: "";
   background-size: contain;
   width: 20px;
   height: 20px;
@@ -141,7 +146,7 @@ body {
   margin: 0 auto;
   background: white;
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
   overflow: hidden;
 }
 
@@ -152,7 +157,7 @@ body {
   text-align: center;
 }
 
-.header h1{
+.header h1 {
   font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 700;
   margin-bottom: 10px;
@@ -164,13 +169,13 @@ body {
   border-bottom: 1px solid #e2e8f0;
 }
 
-.note-input{
+.note-input {
   width: 100%;
   min-height: 120px;
   padding: 20px;
   border: 2px solid #e2e8f0;
   border-radius: 12px;
-  font-size:16px;
+  font-size: 16px;
   font-family: inherit;
   resize: vertical;
   transition: all 0.3s ease;
@@ -221,7 +226,7 @@ body {
   background: white;
   padding: 25px;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   border-left: 5px solid #4f46e5;
   transition: all 0.3s ease;
   position: relative;
@@ -241,10 +246,8 @@ body {
 
 .note-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 2px 40px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 40px rgba(0, 0, 0, 0.15);
 }
-
-
 
 .note-content {
   min-height: 80px;
@@ -263,7 +266,7 @@ body {
 .note-actions {
   display: flex;
   align-items: center;
-  gap: 12px
+  gap: 12px;
 }
 
 .btn {
@@ -290,7 +293,7 @@ body {
 
 .btn-delete {
   background: #fee2e2;
-  color: #dc2626
+  color: #dc2626;
 }
 
 .btn-delete:hover {
@@ -299,7 +302,7 @@ body {
 
 .btn-save {
   background: #dcfce7;
-  color: #166534
+  color: #166534;
 }
 
 .btn-save:hover {
@@ -344,9 +347,205 @@ body {
   box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
 }
 
+/* Custom editor css */
+.tiptap-wrapper {
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.tiptap-wrapper:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  transform: translateY(-2px);
+}
+
+.tiptap-wrapper--edit {
+  margin-bottom: 12px;
+}
+
+.tiptap-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  flex-wrap: wrap;
+}
+
+.toolbar-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 4px 8px;
+  cursor: pointer;
+  color: #475569;
+  font-size: 13px;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  min-height: 30px;
+  text-align: center;
+}
+
+.toolbar-btn:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.toolbar-btn.is-active {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border-color: #bfdbfe;
+}
+
+.toolbar-divider {
+  width: 1px;
+  height: 20px;
+  background: #e2e8f0;
+  margin: 0 4px;
+}
+
+/*Editor content area*/
+.tiptap-editor {
+  padding: 16px 20px;
+  min-height: 120px;
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.6;
+  outline: none;
+  color: #1e293b;
+}
+
+.tiptap-editor p {
+  margin: 0 0 8px 0;
+}
+
+.tiptap-editor p:last-child {
+  margin-bottom: 0;
+}
+
+.tiptap-editor h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #1e293b;
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  padding-left: 20px;
+  margin: 0 0 8px 0;
+}
+
+.tiptap-editor li {
+  margin-bottom: 2px;
+}
+
+.tipatap-editor code {
+  background: #f1f5f9;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-family: "Courier New", monospace;
+  font-size: 13px;
+}
+
+.tipatap-editor pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  overflow-x: auto;
+  margin: 0 0 8px 0;
+}
+
+.tiptap-editor pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.tipatap-editor blockquote {
+  border-left: 3px solid #4f46e5;
+  padding-left: 12px;
+  color: #64748b;
+  font-style: italic;
+  margin: 0 0 8px 0;
+}
+
+.tiptap-output {
+  min-height: 80px;
+  margin-bottom: 15px;
+  line-height: 1.6;
+  font-size: 15px;
+  word-break: break-word;
+}
+
+.tiptap-output p {
+  margin: 0 0 6px 0;
+}
+.tiptap-output p:last-child {
+  margin-bottom: 0;
+}
+.tiptap-output h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.tiptap-output ul,
+.tiptap-output ol {
+  padding-left: 18px;
+  margin-bottom: 6px;
+}
+.tiptap-output code {
+  background: #f1f5f9;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.tiptap-output pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  overflow-x: auto;
+  margin-bottom: 6px;
+}
+.tiptap-output pre code {
+  background: none;
+  padding: 0;
+}
+.tiptap-output blockquote {
+  border-left: 3px solid #4f46e5;
+  padding-left: 10px;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 6px;
+}
+.tiptap-output strong {
+  font-weight: 700;
+}
+.tiptap-output em {
+  font-style: italic;
+}
+.tiptap-output s {
+  text-decoration: line-through;
+}
+
 /* Mobile responsive */
 @media (max-width: 640px) {
-  body { padding: 10px; }
-  .app-container { margin: 10px; border-radius: 16px; }
-  .notes-grid { grid-template-columns: 1fr; }
+  body {
+    padding: 10px;
+  }
+  .app-container {
+    margin: 10px;
+    border-radius: 16px;
+  }
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
 }

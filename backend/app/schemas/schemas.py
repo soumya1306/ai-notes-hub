@@ -4,7 +4,7 @@ from datetime import datetime
 import uuid
 
 class NoteCreate(BaseModel):
-    content: str = Field(..., min_length=1, max_length=500)
+    content: str = Field(..., min_length=1)
     tags: List[str] = Field(default_factory=list)
 
 class NoteResponse(BaseModel):

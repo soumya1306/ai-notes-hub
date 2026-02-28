@@ -1,21 +1,47 @@
 import { useState } from "react";
 import { FaTrash, FaEdit } from "react-icons/fa";
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+
+function InlineEditor({ initialContent, onSave, onCancel }) {
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: initialContent,
+    editorProps: {
+      attributes: { class: "tiptap-editor" },
+    },
+  });
+
+  return (
+    <div>
+      <div className="tiptap-wrapper tiptap-wrapper--edit">
+        <EditorContent editor={editor} />
+      </div>
+
+      <div className="note-actions">
+        <button
+          onClick={() => onSave(editor?.getHTML() ?? "")}
+          className="btn btn-save"
+        >
+          Save
+        </button>
+        <button onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
 
 export default function NotesList({ notes, onDelete, onUpdate }) {
   const [editingId, setEditingId] = useState(null);
   const [editContent, setEditContent] = useState("");
 
   const startEdit = (note) => {
-    console.log(note.id);
-    console.log(note.content);
     setEditingId(note.id);
-    setEditContent(note.content);
   };
 
   const saveEdit = (id) => {
     onUpdate(id, editContent);
     setEditingId(null);
-    setEditContent("");
   };
 
   if (!notes.length) {
@@ -27,30 +53,17 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
       {notes.map((note) => (
         <div key={note.id} className="note-card">
           {editingId === note.id ? (
-            <div>
-              <textarea
-                value={editContent}
-                onChange={(e) => setEditContent(e.target.value)}
-                className="note-input"
-              />
-              <div className="note-actions">
-                <button
-                  onClick={() => saveEdit(note.id)}
-                  className="btn btn-save"
-                >
-                  Save
-                </button>
-                <button
-                  onClick={() => setEditingId(null)}
-                  className="btn btn-cancel"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
+            <InlineEditor
+              initialContent={note.content}
+              onSave={(html) => saveEdit(note.id, html)}
+              onCancel={() => setEditingId(null)}
+            />
           ) : (
             <div>
-              <p className="note-content"> {note.content} </p>
+              <div
+                className="note-content tiptap-content"
+                dangerouslySetInnerHTML={{ __html: note.content}}
+              />
               {note.tags.length ? (
                 <div className="note-tags">
                   {note.tags.map((tag, index) => (

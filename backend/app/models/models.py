@@ -7,7 +7,7 @@
 import uuid
 from datetime import datetime, timezone
 from typing import List, Optional
-from sqlalchemy import String, ARRAY, DateTime, ForeignKey
+from sqlalchemy import String, ARRAY, DateTime, ForeignKey, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -28,7 +28,7 @@ class Note(Base):
 
   # Mapped[type] tells Python the exact type (str, uuid, etc.)
   id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-  content: Mapped[str] = mapped_column(String(500), nullable=False)
+  content: Mapped[str] = mapped_column(Text, nullable=False)
   tags: Mapped[List[str]] = mapped_column(ARRAY(String), default=list)
   
   # Use server_default or a callable (no parens) for timestamps
