@@ -1,9 +1,46 @@
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Extension from "@tiptap/core";
 import { useCallback, useState } from "react";
 
-function Toolbar({ editor }) {
+const DoubleEnterExitMark = Extension.create({
+  name: "doubleEnterExitMark",
 
+  addStorage() {
+    return {
+      lastEnterTime: 0,
+    };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      Enter: ({ editor }) => {
+        const { state } = editor.view;
+        const { selection, storedMarks } = state;
+        const { $from } = selection;
+
+        const marksAtCursor = storedMarks || $from.marks();
+        if (marksAtCursor.length === 0) return false;
+
+        const now = Date.now();
+        const timeSinceLast = now - this.storage.lastEnterTime;
+        this.storage.lastEnterTime = now;
+
+        const isDoubleEnter = timeSinceLast < 500; // 500 ms window
+
+        if (isDoubleEnter) {
+          editor.commands.splitBlock();
+          editor.commands.unsetAllMarks();
+          return true;
+        }
+
+        return false;
+      },
+    };
+  },
+});
+
+function Toolbar({ editor }) {
   const editorState = useEditorState({
     editor,
     selector: (ctx) => ({
@@ -87,7 +124,6 @@ function Toolbar({ editor }) {
         title="Code Block"
       >
         {"</>"}
-
       </button>
 
       <button
@@ -98,19 +134,21 @@ function Toolbar({ editor }) {
       >
         "
       </button>
-
     </div>
   );
 }
 
 export default function NoteForm({ onAdd }) {
-
   const [tagsInput, setTagsInput] = useState("");
 
   const [, forceUpdate] = useState(0);
 
   const editor = useEditor({
-    extensions: [StarterKit],
+    extensions: [
+      StarterKit.configure({ code: false }),
+      Code.configure({}),
+      DoubleEnterExitMark,
+    ],
     content: "",
     editorProps: {
       attributes: {
@@ -119,8 +157,8 @@ export default function NoteForm({ onAdd }) {
     },
 
     onTransaction: useCallback(() => {
-      forceUpdate(n => n+1);
-    },[]),
+      forceUpdate((n) => n + 1);
+    }, []),
   });
 
   const handleSubmit = (e) => {
@@ -146,7 +184,7 @@ export default function NoteForm({ onAdd }) {
       <div className="tiptap-wrapper">
         <Toolbar editor={editor} />
         <EditorContent editor={editor} />
-      </div>  
+      </div>
       <input
         type="text"
         placeholder="Tags: frontend, react, css (comma separated)"
