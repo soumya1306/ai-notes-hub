@@ -13,7 +13,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 4: PostgreSQL database (UUID keys, ARRAY tags, layered architecture)
 - ✅ Phase 5: JWT Auth + Refresh Tokens (bcrypt, PyJWT, auto token refresh, frontend auth flow)
 - ✅ Phase 6: Google OAuth (Authlib 1.6.8, SessionMiddleware, React Router v6, OAuthCallback)
-- 📅 Phase 7: Rich Text Editor (TipTap)
+- ✅ Phase 7: Rich Text Editor (TipTap — toolbar, HTML rendering, smart mark handling)
 - 📅 Phase 8: Gemini AI — Summarize + Auto Tags
 - 📅 Phase 9: Semantic Search (pgvector)
 - 📅 Phase 10: RAG — Q&A on Notes
@@ -29,17 +29,17 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 
 ## Tech Stack
 
-| Layer      | Tech                                                          |
-|------------|---------------------------------------------------------------|
-| Frontend   | React, Vite, Vanilla CSS, Context API, React Router v6        |
-| Backend    | FastAPI, Pydantic v2, Python 3.14                             |
-| Database   | PostgreSQL 18, SQLAlchemy 2.0, Alembic                        |
-| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 |
-| AI         | Gemini API, RAG pipeline (upcoming)                           |
-| Storage    | Cloudinary (upcoming)                                         |
-| DevOps     | Docker, GitHub Actions CI/CD                                  |
-| Monitoring | Sentry (upcoming)                                             |
-| Deployment | Vercel (frontend), Railway (backend)                          |
+| Layer      | Tech                                                                    |
+|------------|-------------------------------------------------------------------------|
+| Frontend   | React, Vite, Vanilla CSS, Context API, React Router v6, TipTap          |
+| Backend    | FastAPI, Pydantic v2, Python 3.14                                        |
+| Database   | PostgreSQL 18, SQLAlchemy 2.0, Alembic                                   |
+| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0            |
+| AI         | Gemini API, RAG pipeline (upcoming)                                      |
+| Storage    | Cloudinary (upcoming)                                                    |
+| DevOps     | Docker, GitHub Actions CI/CD                                             |
+| Monitoring | Sentry (upcoming)                                                        |
+| Deployment | Vercel (frontend), Railway (backend)                                     |
 
 ## Features
 
@@ -57,11 +57,13 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Google OAuth 2.0 — One-click sign in with Google via Authlib 1.6.8
 - OAuth account linking — Google login links to existing email/password account
 - OAuthCallback page — Handles token extraction after Google redirect
+- Rich text editor — TipTap with bold, italic, strikethrough, headings, lists, code blocks, blockquotes
+- HTML rendering — Note cards render TipTap HTML output correctly
+- Smart mark handling — Double Enter exits active marks (code, bold, etc.)
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Rich text editing with TipTap
-- AI-powered summarization and auto-tagging
+- AI-powered summarization and auto-tagging with Gemini
 - Semantic search with pgvector
 - File attachments with Cloudinary
 - Real-time collaboration with WebSockets
@@ -81,8 +83,8 @@ ai-notes-hub/
 │       │   ├── LoginForm.jsx        # Login UI + "Continue with Google" button
 │       │   ├── RegisterForm.jsx     # Register UI with useNavigate
 │       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
-│       │   ├── NoteForm.jsx         # Create note form
-│       │   └── NoteList.jsx         # Notes grid display
+│       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
+│       │   └── NoteList.jsx         # Notes grid with HTML rendering + inline edit
 │       ├── App.jsx                  # React Router v6 routes + ProtectedRoute
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
@@ -133,6 +135,7 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn main:app --reload
 ```
 
@@ -190,14 +193,14 @@ npm run dev
 
 ### notes table
 
-| Column     | Type         | Constraints          |
-|------------|--------------|----------------------|
-| id         | UUID         | PRIMARY KEY          |
-| content    | VARCHAR(500) | NOT NULL             |
-| tags       | VARCHAR[]    | DEFAULT []           |
-| user_id    | UUID         | REFERENCES users(id) |
-| created_at | TIMESTAMP    |                      |
-| updated_at | TIMESTAMP    | NULLABLE             |
+| Column     | Type      | Constraints          |
+|------------|-----------|----------------------|
+| id         | UUID      | PRIMARY KEY          |
+| content    | TEXT      | NOT NULL             |
+| tags       | VARCHAR[] | DEFAULT []           |
+| user_id    | UUID      | REFERENCES users(id) |
+| created_at | TIMESTAMP |                      |
+| updated_at | TIMESTAMP | NULLABLE             |
 
 ## Live Demo
 
@@ -205,7 +208,7 @@ npm run dev
 
 ## What's Next
 
-**Phase 7 — Rich Text Editor** — TipTap integration replacing plain textarea with full rich text experience (bold, italic, lists, headings, code blocks)
+**Phase 8 — Gemini AI** — AI-powered note summarization and automatic tag generation using Google Gemini API
 
 ---
 

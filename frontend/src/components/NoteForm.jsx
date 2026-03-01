@@ -1,6 +1,7 @@
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Extension from "@tiptap/core";
+import {Extension} from "@tiptap/core";
+import Code from "@tiptap/extension-code"
 import { useCallback, useState } from "react";
 
 const DoubleEnterExitMark = Extension.create({
@@ -141,8 +142,6 @@ function Toolbar({ editor }) {
 export default function NoteForm({ onAdd }) {
   const [tagsInput, setTagsInput] = useState("");
 
-  const [, forceUpdate] = useState(0);
-
   const editor = useEditor({
     extensions: [
       StarterKit.configure({ code: false }),
@@ -156,9 +155,6 @@ export default function NoteForm({ onAdd }) {
       },
     },
 
-    onTransaction: useCallback(() => {
-      forceUpdate((n) => n + 1);
-    }, []),
   });
 
   const handleSubmit = (e) => {
