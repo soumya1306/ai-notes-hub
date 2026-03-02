@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from app.database import get_db
-from app.schemas.schemas import NoteCreate, NoteResponse
+from app.schemas.schemas import NoteCreate, NoteResponse, SummarizeResponse, AutoTagsResponse
 from app.core.auth import get_current_user_id
 import app.crud.notes as crud
+from app.services.ai import summarize_note, generate_tags
 
 router = APIRouter(prefix="/notes", tags=["Notes"])
 
@@ -36,3 +37,27 @@ async def delete_note(note_id: str, db: Session = Depends(get_db), user_id: str 
   deleted = crud.delete_note(db, note_id, user_id)
   if not deleted:
     raise HTTPException(status_code=404, detail="Note not found")
+  
+@router.post("/{note_id}/summarize", response_model=SummarizeResponse, status_code=200)
+async def summarize(
+  note_id: str,
+  db: Session = Depends(get_db),
+  user_id: str =  Depends(get_current_user_id)
+):
+  note = crud.get_note_by_id(db, note_id, user_id)
+  if not note:
+    raise HTTPException(status_code=404, detail="Note not found")
+  summary = await summarize_note(note.content)
+  return SummarizeResponse(summary=summary)
+
+@router.post("/{note_id}/autotags", response_model=AutoTagsResponse, status_code=200)
+async def autotags(
+  note_id: str,
+  db: Session = Depends(get_db),
+  user_id: str = Depends(get_current_user_id)
+):
+  note = crud.get_note_by_id(db, note_id, user_id)
+  if not note:
+    raise HTTPException(status_code=404, detail="Note note found")
+  tags = await generate_tags(note.content)
+  return AutoTagsResponse(tags=tags)

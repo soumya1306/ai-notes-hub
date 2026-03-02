@@ -53,31 +53,65 @@ export const notesApi = {
   },
 
   async createNote(content, tags, refreshAccessToken) {
-    const res = await authFetch(`${API_BASE}/notes`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, tags }),
-    }, refreshAccessToken);
+    const res = await authFetch(
+      `${API_BASE}/notes`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, tags }),
+      },
+      refreshAccessToken,
+    );
 
     if (!res.ok) throw new Error("Failed to create");
     return res.json();
   },
 
   async updateNote(id, content, tags, refreshAccessToken) {
-    const res = await authFetch(`${API_BASE}/notes/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content, tags }),
-    }, refreshAccessToken);
+    const res = await authFetch(
+      `${API_BASE}/notes/${id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content, tags }),
+      },
+      refreshAccessToken,
+    );
 
     if (!res.ok) throw new Error("Failed to update");
     return res.json();
   },
 
   async deleteNote(id, refreshAccessToken) {
-    const res = await authFetch(`${API_BASE}/notes/${id}`, {
-      method: "DELETE",
-    }, refreshAccessToken);
+    const res = await authFetch(
+      `${API_BASE}/notes/${id}`,
+      {
+        method: "DELETE",
+      },
+      refreshAccessToken,
+    );
     if (!res.ok) throw new Error("Failed to delete");
   },
+};
+
+export const summarizeNote = async (noteId) => {
+  return await callWithRefresh(() =>
+    fetch(`${API_BASE}/notes/${noteId}/summarize`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      },
+    }),
+  );
+};
+
+export const autoTagNote = async (noteId) => {
+  return await callWithRefresh(() => {
+    fetch(`${API_BASE}/notes/${noteId}/autotags`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+      },
+    });
+  });
 };

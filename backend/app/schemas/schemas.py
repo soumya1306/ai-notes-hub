@@ -31,3 +31,9 @@ class TokenResponse(BaseModel):
     
 class RefreshRequest(BaseModel):
     refresh_token: str
+    
+class SummarizeResponse(BaseModel):
+    summary: str
+    
+class AutoTagsResponse(BaseModel):
+    tags: List[str]

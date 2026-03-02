@@ -14,7 +14,6 @@ function NotesPage() {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showRegister, setShowRegister] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -38,12 +37,16 @@ function NotesPage() {
   };
 
   const updateNote = async (id, content, tags = []) => {
-    const updatedNote = await notesApi.updateNote(id, content, tags, refreshAccessToken);
+    const note = notes.find(n => n.id === id);
+    const resolvedTags = tags ?? note?.tags ?? [];
+    const updatedNote = await notesApi.updateNote(id, content, resolvedTags, refreshAccessToken);
 
     setNotes(
       prev => prev.map(note => note.id === id ? updatedNote : note),
     );
   };
+
+
 
   if (loading) return <div className="app-container"><p>Loading...</p></div>;
   if (error) return <div className="app-container"><p style={{color: "red"}}>{error}</p></div>

@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { FaTrash, FaEdit } from "react-icons/fa";
+import { FaTrash, FaEdit, FaMagic, FaTags } from "react-icons/fa";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import { summarizeNote, autoTagNote } from "../api/notesAPi";
 
 function InlineEditor({ initialContent, onSave, onCancel }) {
   const editor = useEditor({
@@ -33,19 +34,49 @@ function InlineEditor({ initialContent, onSave, onCancel }) {
 
 export default function NotesList({ notes, onDelete, onUpdate }) {
   const [editingId, setEditingId] = useState(null);
-  const [editContent, setEditContent] = useState("");
+  const [summaries, setSummaries] = useState({});
+  const [loadingAI, setLoadingAI] = useState({});
 
   const startEdit = (note) => {
     setEditingId(note.id);
   };
 
-  const saveEdit = (id) => {
-    onUpdate(id, editContent);
+  const saveEdit = (id, html) => {
+    onUpdate(id, html);
     setEditingId(null);
   };
 
   if (!notes.length) {
     return <div className="empty-state"> No notes yet. Add one above!</div>;
+  }
+
+  const handleSummarize = async (note) => {
+    setLoadingAI((prev) => ({ ...prev, [note.id]: "summarize" }));
+    try {
+      const res = await summarizeNote(note.id);
+      const data = await res.json();
+      setSummaries((prev) => ({ ...prev, [note.id]: data.summary }));
+    } catch {
+      setSummaries((prev) => ({ ...prev, [note.id]: "Falied to summarize." }));
+    } finally {
+      setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
+    }
+  };
+
+  const handleAutoTags = async (note) => {
+    setLoadingAI((prev) => ({ ...prev, [note.id]: "autotags" }));
+    try {
+      const res = await autoTagNote(note.id);
+      const data = await res.json();
+      onUpdate(note.id, note.content, data.tags);
+    } catch {
+    } finally {
+      setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
+    }
+  };
+
+  if (!notes.length) {
+    return <div className="empty-state">No notes yet. Add one above!</div>;
   }
 
   return (
@@ -61,9 +92,18 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
           ) : (
             <div>
               <div
-                className="note-content tiptap-content"
-                dangerouslySetInnerHTML={{ __html: note.content}}
+                className="note-content tiptap-output"
+                dangerouslySetInnerHTML={{ __html: note.content }}
               />
+
+              {summaries[note.id] && (
+                <div className="note-summary">
+                  <span className="summary-label">✨ Summary</span>
+                  <p>{summaries[note.id]}</p>
+                </div>
+              )
+              }
+
               {note.tags.length ? (
                 <div className="note-tags">
                   {note.tags.map((tag, index) => (
@@ -73,9 +113,11 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
                   ))}
                 </div>
               ) : null}
+
               <div className="note-meta">
                 {new Date(note.created_at).toLocaleDateString()}
               </div>
+
               <div className="note-actions">
                 <button
                   onClick={() => startEdit(note)}
@@ -88,6 +130,26 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
                   className="btn btn-delete"
                 >
                   <FaTrash /> Delete
+                </button>
+              </div>
+
+              <div className="note-actions" style={{ marginTop: "8px" }}>
+                <button
+                  onClick={() => handleSummarize(note)}
+                  className="btn btn-ai"
+                  disabled={!!loadingAI[note.id]}
+                >
+                  <FaMagic />
+                  {loadingAI[note.id] === "summarize" ? "Summarizing..." : "Summarize"}
+                </button>
+
+                <button
+                  onClick={() => handleAutoTags(note)}
+                  className="btn btn-ai"
+                  disabled={!!loadingAI[note.id]}
+                >
+                  <FaTags />
+                  {loadingAI[note.id] === "autotags" ? "Tagging..." : "Auto Tags"}
                 </button>
               </div>
             </div>

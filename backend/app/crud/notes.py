@@ -6,6 +6,9 @@ from datetime import datetime, timezone
 def get_notes(db: Session, user_id: str):
     return db.query(Note).filter(Note.user_id == user_id).order_by(Note.created_at.desc()).all()
 
+def get_note_by_id(db: Session, note_id: str, user_id: str):
+    return db.query(Note).filter(Note.user_id == user_id).first()
+
 def create_note(db: Session, note: NoteCreate, user_id: str):
     db_note = Note(
         content=note.content,
