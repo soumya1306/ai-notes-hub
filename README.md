@@ -14,8 +14,8 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 5: JWT Auth + Refresh Tokens (bcrypt, PyJWT, auto token refresh, frontend auth flow)
 - ✅ Phase 6: Google OAuth (Authlib 1.6.8, SessionMiddleware, React Router v6, OAuthCallback)
 - ✅ Phase 7: Rich Text Editor (TipTap — toolbar, HTML rendering, smart mark handling)
-- ✅ Phase 8: Gemini AI — Summarize + Auto Tags (google-genai, gemini-3.0-flash-preview, BeautifulSoup)
-- 📅 Phase 9: Search & Filter (full-text search, tag filter pills)
+- ✅ Phase 8: Gemini AI — Summarize + Auto Tags (google-genai, gemini-2.5-flash-lite, BeautifulSoup)
+- ✅ Phase 9: Search & Filter (debounced full-text search, clickable tag filter pills)
 - 📅 Phase 10: Semantic Search (pgvector)
 - 📅 Phase 11: RAG — Q&A on Notes
 - 📅 Phase 12: File Attachments (Cloudinary)
@@ -63,10 +63,11 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Smart mark handling — Double Enter exits active marks (code, bold, etc.)
 - AI summarization — One-click Gemini AI summary displayed below each note card
 - AI auto-tagging — Gemini generates and saves relevant tags automatically
+- Full-text search — Debounced search across note content and tags via array_to_string ilike
+- Clickable tag pills — Click any tag to instantly filter notes by that tag
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Search & filter — Full-text search and tag filter pills
 - Semantic search with pgvector
 - RAG — Q&A on your own notes
 - File attachments with Cloudinary
@@ -88,8 +89,8 @@ ai-notes-hub/
 │       │   ├── RegisterForm.jsx     # Register UI with useNavigate
 │       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
 │       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
-│       │   └── NoteList.jsx         # Notes grid + inline edit + AI buttons
-│       ├── App.jsx                  # React Router v6 routes + ProtectedRoute
+│       │   └── NoteList.jsx         # Notes grid + inline edit + AI buttons + clickable tags
+│       ├── App.jsx                  # React Router v6 routes + ProtectedRoute + search state
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
     ├── app/
@@ -99,11 +100,11 @@ ai-notes-hub/
     │   │   └── schemas.py           # Pydantic v2 schemas incl. SummarizeResponse, AutoTagsResponse
     │   ├── routes/
     │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes
-    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags endpoints
+    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags + ?search= param
     │   ├── core/
     │   │   └── auth.py              # bcrypt + PyJWT + get_current_user_id
     │   ├── crud/
-    │   │   └── notes.py             # Per-user note operations + get_note_by_id
+    │   │   └── notes.py             # Per-user note ops + search filter + get_note_by_id
     │   ├── services/
     │   │   └── ai.py                # Gemini AI service — summarize_note() + generate_tags()
     │   └── database.py              # SQLAlchemy engine + session
@@ -168,19 +169,19 @@ npm run dev
 
 ### Notes — requires Bearer token
 
-| Method | Endpoint                | Description                    |
-|--------|-------------------------|--------------------------------|
-| GET    | /notes/                 | Get all notes for current user |
-| POST   | /notes/                 | Create a new note              |
-| PUT    | /notes/{id}             | Update an existing note        |
-| DELETE | /notes/{id}             | Delete a note                  |
-| POST   | /notes/{id}/summarize   | AI summary of note via Gemini  |
-| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini   |
+| Method | Endpoint                | Description                             |
+|--------|-------------------------|-----------------------------------------|
+| GET    | /notes/                 | Get all notes (optional ?search= param) |
+| POST   | /notes/                 | Create a new note                       |
+| PUT    | /notes/{id}             | Update an existing note                 |
+| DELETE | /notes/{id}             | Delete a note                           |
+| POST   | /notes/{id}/summarize   | AI summary of note via Gemini           |
+| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini            |
 
 ## Security Features
 
 - **bcrypt password hashing** — Salted and hashed, Python 3.14 compatible
-- **JWT access tokens** — 15-minute expiry (HS256)
+- **JWT access tokens** — 30-minute expiry (HS256)
 - **Refresh token rotation** — New refresh token on every refresh call
 - **Token revocation** — Logout clears refresh token in database
 - **Per-user data isolation** — All queries scoped to authenticated user
@@ -217,7 +218,7 @@ npm run dev
 
 ## What's Next
 
-**Phase 9 — Search & Filter** — Full-text search across note content and tags, with filter pills for quick tag-based filtering
+**Phase 10 — Semantic Search** — pgvector embeddings for similarity-based note retrieval
 
 ---
 
