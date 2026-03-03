@@ -3,8 +3,11 @@ from google import genai
 from bs4 import BeautifulSoup
 
 client = genai.Client(api_key= os.getenv("GEMINI_API_KEY"))
-MODEL = "gemini-3-flash-preview"
+MODEL = "gemini-2.5-flash"
 
+# for m in client.models.list():
+#   print(m)
+#   print("\n")
 
 def _strip_html(html: str) -> str:
   """

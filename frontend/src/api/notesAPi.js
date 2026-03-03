@@ -46,8 +46,10 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
 };
 
 export const notesApi = {
-  async getNotes(refreshAccessToken) {
-    const res = await authFetch(`${API_BASE}/notes/`, {}, refreshAccessToken);
+  async getNotes(refreshAccessToken, search = "") {
+    const url = new URL(`${API_BASE}/notes/`)
+    if(search.trim()) url.searchParams.set("search", search.trim());
+    const res = await authFetch(url.toString(), {}, refreshAccessToken);
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();
   },

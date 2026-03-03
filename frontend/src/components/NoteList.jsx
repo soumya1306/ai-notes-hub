@@ -32,7 +32,7 @@ function InlineEditor({ initialContent, onSave, onCancel }) {
   );
 }
 
-export default function NotesList({ notes, onDelete, onUpdate }) {
+export default function NotesList({ notes, onDelete, onUpdate, onTagFilter }) {
   const [editingId, setEditingId] = useState(null);
   const [summaries, setSummaries] = useState({});
   const [loadingAI, setLoadingAI] = useState({});
@@ -46,10 +46,6 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
     setEditingId(null);
   };
 
-  if (!notes.length) {
-    return <div className="empty-state"> No notes yet. Add one above!</div>;
-  }
-
   const handleSummarize = async (note) => {
     setLoadingAI((prev) => ({ ...prev, [note.id]: "summarize" }));
     try {
@@ -57,7 +53,7 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
       const data = await res.json();
       setSummaries((prev) => ({ ...prev, [note.id]: data.summary }));
     } catch (error) {
-      console.log(error);
+      console.eror(error);
       setSummaries((prev) => ({ ...prev, [note.id]: "Falied to summarize." }));
     } finally {
       setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
@@ -70,7 +66,8 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
       const res = await autoTagNote(note.id);
       const data = await res.json();
       onUpdate(note.id, note.content, data.tags);
-    } catch {
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
     }
@@ -107,7 +104,12 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
               {note.tags.length ? (
                 <div className="note-tags">
                   {note.tags.map((tag, index) => (
-                    <span key={index} className="tag">
+                    <span
+                      key={index}
+                      className="tag"
+                      onClick={() => onTagFilter?.(tag)}
+                      title={`Filter by ${tag}`}
+                    >
                       {tag}
                     </span>
                   ))}
