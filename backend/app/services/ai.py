@@ -3,7 +3,7 @@ from google import genai
 from bs4 import BeautifulSoup
 
 client = genai.Client(api_key= os.getenv("GEMINI_API_KEY"))
-MODEL = "gemini-2.0-flash"
+MODEL = "gemini-3-flash-preview"
 
 
 def _strip_html(html: str) -> str:
@@ -15,7 +15,6 @@ def _strip_html(html: str) -> str:
 async def summarize_note(content: str) -> str:
   plain = _strip_html(content)
   prompt = f"Summarize the following note in 2-3 concise sentences. Return only the summary, no preamble \n\n {plain}"
-  
   response = await client.aio.models.generate_content(
     model=MODEL,
     contents=prompt

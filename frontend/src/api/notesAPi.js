@@ -47,14 +47,14 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
 
 export const notesApi = {
   async getNotes(refreshAccessToken) {
-    const res = await authFetch(`${API_BASE}/notes`, {}, refreshAccessToken);
+    const res = await authFetch(`${API_BASE}/notes/`, {}, refreshAccessToken);
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();
   },
 
   async createNote(content, tags, refreshAccessToken) {
     const res = await authFetch(
-      `${API_BASE}/notes`,
+      `${API_BASE}/notes/`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -95,23 +95,27 @@ export const notesApi = {
 };
 
 export const summarizeNote = async (noteId) => {
-  return await callWithRefresh(() =>
-    fetch(`${API_BASE}/notes/${noteId}/summarize`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-      },
-    }),
-  );
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(`${API_BASE}/notes/${noteId}/summarize`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!res.ok) throw new Error("Failed to Summarize");
+  return res;
 };
 
 export const autoTagNote = async (noteId) => {
-  return await callWithRefresh(() => {
-    fetch(`${API_BASE}/notes/${noteId}/autotags`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem("access_token")}`,
-      },
-    });
+  const token = localStorage.getItem("access_token");
+  const res = await fetch(`${API_BASE}/notes/${noteId}/autotags`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+    },
   });
+
+  if (!res.ok) throw new Error("Failed to autotag");
+  return res;
 };

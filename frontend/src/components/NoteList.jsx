@@ -36,13 +36,14 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
   const [editingId, setEditingId] = useState(null);
   const [summaries, setSummaries] = useState({});
   const [loadingAI, setLoadingAI] = useState({});
-
+  
+  console.log(summaries)
   const startEdit = (note) => {
     setEditingId(note.id);
   };
 
   const saveEdit = (id, html) => {
-    onUpdate(id, html);
+    onUpdate(id, html, currentTags);
     setEditingId(null);
   };
 
@@ -56,7 +57,8 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
       const res = await summarizeNote(note.id);
       const data = await res.json();
       setSummaries((prev) => ({ ...prev, [note.id]: data.summary }));
-    } catch {
+    } catch (error){
+      console.log(error)
       setSummaries((prev) => ({ ...prev, [note.id]: "Falied to summarize." }));
     } finally {
       setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
@@ -86,7 +88,7 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
           {editingId === note.id ? (
             <InlineEditor
               initialContent={note.content}
-              onSave={(html) => saveEdit(note.id, html)}
+              onSave={(html) => saveEdit(note.id, html, note.tags)}
               onCancel={() => setEditingId(null)}
             />
           ) : (

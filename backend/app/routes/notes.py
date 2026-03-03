@@ -9,10 +9,6 @@ from app.services.ai import summarize_note, generate_tags
 
 router = APIRouter(prefix="/notes", tags=["Notes"])
 
-@router.get("/")
-async def root():
-  return {"status": "ok", "message": "AI Notes Hub v3.0.0 is running!"}
-
 #create note
 @router.post("/", response_model=NoteResponse, status_code=201)
 async def create_note(note: NoteCreate, db: Session = Depends(get_db), user_id: str = Depends(get_current_user_id)):
