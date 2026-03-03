@@ -14,32 +14,33 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 5: JWT Auth + Refresh Tokens (bcrypt, PyJWT, auto token refresh, frontend auth flow)
 - ✅ Phase 6: Google OAuth (Authlib 1.6.8, SessionMiddleware, React Router v6, OAuthCallback)
 - ✅ Phase 7: Rich Text Editor (TipTap — toolbar, HTML rendering, smart mark handling)
-- 📅 Phase 8: Gemini AI — Summarize + Auto Tags
-- 📅 Phase 9: Semantic Search (pgvector)
-- 📅 Phase 10: RAG — Q&A on Notes
-- 📅 Phase 11: File Attachments (Cloudinary)
-- 📅 Phase 12: Real-time Collaboration (WebSockets)
-- 📅 Phase 13: Rate Limiting + Security Headers
-- 📅 Phase 14: Unit + Integration Tests
-- 📅 Phase 15: Docker + GitHub Actions CI/CD
-- 📅 Phase 16: Sentry + Performance Monitoring
-- 📅 Phase 17: System Design Doc (ARCHITECTURE.md)
-- 📅 Phase 18: Full Production Deploy
-- 📅 Phase 19: Polish + Portfolio README
+- ✅ Phase 8: Gemini AI — Summarize + Auto Tags (google-genai, gemini-3.0-flash-preview, BeautifulSoup)
+- 📅 Phase 9: Search & Filter (full-text search, tag filter pills)
+- 📅 Phase 10: Semantic Search (pgvector)
+- 📅 Phase 11: RAG — Q&A on Notes
+- 📅 Phase 12: File Attachments (Cloudinary)
+- 📅 Phase 13: Real-time Collaboration (WebSockets)
+- 📅 Phase 14: Rate Limiting + Security Headers
+- 📅 Phase 15: Unit + Integration Tests
+- 📅 Phase 16: Docker + GitHub Actions CI/CD
+- 📅 Phase 17: Sentry + Performance Monitoring
+- 📅 Phase 18: System Design Doc (ARCHITECTURE.md)
+- 📅 Phase 19: Full Production Deploy
+- 📅 Phase 20: Polish + Portfolio README
 
 ## Tech Stack
 
-| Layer      | Tech                                                                    |
-|------------|-------------------------------------------------------------------------|
-| Frontend   | React, Vite, Vanilla CSS, Context API, React Router v6, TipTap          |
-| Backend    | FastAPI, Pydantic v2, Python 3.14                                        |
-| Database   | PostgreSQL 18, SQLAlchemy 2.0, Alembic                                   |
-| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0            |
-| AI         | Gemini API, RAG pipeline (upcoming)                                      |
-| Storage    | Cloudinary (upcoming)                                                    |
-| DevOps     | Docker, GitHub Actions CI/CD                                             |
-| Monitoring | Sentry (upcoming)                                                        |
-| Deployment | Vercel (frontend), Railway (backend)                                     |
+| Layer      | Tech                                                                              |
+|------------|-----------------------------------------------------------------------------------|
+| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons   |
+| Backend    | FastAPI, Pydantic v2, Python 3.14                                                 |
+| Database   | PostgreSQL 18, SQLAlchemy 2.0, Alembic                                            |
+| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)          |
+| AI         | google-genai, gemini-2.5-flash-lite, BeautifulSoup4, RAG pipeline (upcoming)     |
+| Storage    | Cloudinary (upcoming)                                                             |
+| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                           |
+| Monitoring | Sentry (upcoming)                                                                 |
+| Deployment | Vercel (frontend), Railway (backend)                                              |
 
 ## Features
 
@@ -60,11 +61,14 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Rich text editor — TipTap with bold, italic, strikethrough, headings, lists, code blocks, blockquotes
 - HTML rendering — Note cards render TipTap HTML output correctly
 - Smart mark handling — Double Enter exits active marks (code, bold, etc.)
+- AI summarization — One-click Gemini AI summary displayed below each note card
+- AI auto-tagging — Gemini generates and saves relevant tags automatically
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- AI-powered summarization and auto-tagging with Gemini
+- Search & filter — Full-text search and tag filter pills
 - Semantic search with pgvector
+- RAG — Q&A on your own notes
 - File attachments with Cloudinary
 - Real-time collaboration with WebSockets
 
@@ -76,7 +80,7 @@ ai-notes-hub/
 │   └── src/
 │       ├── api/
 │       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
-│       │   └── notesAPi.js          # Notes endpoints + Bearer tokens + auto refresh
+│       │   └── notesAPi.js          # Notes CRUD + summarizeNote() + autoTagNote()
 │       ├── context/
 │       │   └── AuthContext.jsx      # Global auth state, loginWithTokens() for OAuth
 │       ├── components/
@@ -84,7 +88,7 @@ ai-notes-hub/
 │       │   ├── RegisterForm.jsx     # Register UI with useNavigate
 │       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
 │       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
-│       │   └── NoteList.jsx         # Notes grid with HTML rendering + inline edit
+│       │   └── NoteList.jsx         # Notes grid + inline edit + AI buttons
 │       ├── App.jsx                  # React Router v6 routes + ProtectedRoute
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
@@ -92,14 +96,16 @@ ai-notes-hub/
     │   ├── models/
     │   │   └── models.py            # User (+ google_id) + Note ORM models
     │   ├── schemas/
-    │   │   └── schemas.py           # Pydantic request/response schemas
+    │   │   └── schemas.py           # Pydantic v2 schemas incl. SummarizeResponse, AutoTagsResponse
     │   ├── routes/
     │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes
-    │   │   └── notes.py             # /notes endpoints (protected)
+    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags endpoints
     │   ├── core/
     │   │   └── auth.py              # bcrypt + PyJWT + get_current_user_id
     │   ├── crud/
-    │   │   └── notes.py             # Per-user note operations
+    │   │   └── notes.py             # Per-user note operations + get_note_by_id
+    │   ├── services/
+    │   │   └── ai.py                # Gemini AI service — summarize_note() + generate_tags()
     │   └── database.py              # SQLAlchemy engine + session
     ├── main.py                      # FastAPI app + SessionMiddleware + CORS
     ├── requirements.txt
@@ -115,6 +121,7 @@ SECRET_KEY=your-super-secret-key-change-in-production
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
 FRONTEND_URL=http://localhost:5173
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 **Frontend `.env`**
@@ -161,12 +168,14 @@ npm run dev
 
 ### Notes — requires Bearer token
 
-| Method | Endpoint    | Description                    |
-|--------|-------------|--------------------------------|
-| GET    | /notes/     | Get all notes for current user |
-| POST   | /notes/     | Create a new note              |
-| PUT    | /notes/{id} | Update an existing note        |
-| DELETE | /notes/{id} | Delete a note                  |
+| Method | Endpoint                | Description                    |
+|--------|-------------------------|--------------------------------|
+| GET    | /notes/                 | Get all notes for current user |
+| POST   | /notes/                 | Create a new note              |
+| PUT    | /notes/{id}             | Update an existing note        |
+| DELETE | /notes/{id}             | Delete a note                  |
+| POST   | /notes/{id}/summarize   | AI summary of note via Gemini  |
+| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini   |
 
 ## Security Features
 
@@ -208,7 +217,7 @@ npm run dev
 
 ## What's Next
 
-**Phase 8 — Gemini AI** — AI-powered note summarization and automatic tag generation using Google Gemini API
+**Phase 9 — Search & Filter** — Full-text search across note content and tags, with filter pills for quick tag-based filtering
 
 ---
 
