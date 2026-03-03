@@ -13,7 +13,9 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="AI Notes Hub", version="3.0.0")
 
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SECRET_KEY","your_secret_key_here"))
+app.add_middleware(
+    SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "your_secret_key_here")
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -25,6 +27,7 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(notes.router)
+
 
 @app.get("/")
 async def root():
