@@ -36,14 +36,13 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
   const [editingId, setEditingId] = useState(null);
   const [summaries, setSummaries] = useState({});
   const [loadingAI, setLoadingAI] = useState({});
-  
-  console.log(summaries)
+
   const startEdit = (note) => {
     setEditingId(note.id);
   };
 
-  const saveEdit = (id, html) => {
-    onUpdate(id, html, currentTags);
+  const saveEdit = (id, html, existingTags) => {
+    onUpdate(id, html, existingTags);
     setEditingId(null);
   };
 
@@ -57,8 +56,8 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
       const res = await summarizeNote(note.id);
       const data = await res.json();
       setSummaries((prev) => ({ ...prev, [note.id]: data.summary }));
-    } catch (error){
-      console.log(error)
+    } catch (error) {
+      console.log(error);
       setSummaries((prev) => ({ ...prev, [note.id]: "Falied to summarize." }));
     } finally {
       setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
@@ -103,8 +102,7 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
                   <span className="summary-label">✨ Summary</span>
                   <p>{summaries[note.id]}</p>
                 </div>
-              )
-              }
+              )}
 
               {note.tags.length ? (
                 <div className="note-tags">
@@ -142,7 +140,9 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
                   disabled={!!loadingAI[note.id]}
                 >
                   <FaMagic />
-                  {loadingAI[note.id] === "summarize" ? "Summarizing..." : "Summarize"}
+                  {loadingAI[note.id] === "summarize"
+                    ? "Summarizing..."
+                    : "Summarize"}
                 </button>
 
                 <button
@@ -151,7 +151,9 @@ export default function NotesList({ notes, onDelete, onUpdate }) {
                   disabled={!!loadingAI[note.id]}
                 >
                   <FaTags />
-                  {loadingAI[note.id] === "autotags" ? "Tagging..." : "Auto Tags"}
+                  {loadingAI[note.id] === "autotags"
+                    ? "Tagging..."
+                    : "Auto Tags"}
                 </button>
               </div>
             </div>
