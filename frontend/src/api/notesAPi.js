@@ -122,7 +122,7 @@ export const autoTagNote = async (noteId) => {
   return res;
 };
 
-export const semanticSearch = async (queueMicrotask, limit = 10) => {
+export const semanticSearch = async (q, limit = 10) => {
   const token = localStorage.getItem("access_token");
   const url = new URL(`${API_BASE}/notes/semantic`);
   url.searchParams.set("q", q.trim());

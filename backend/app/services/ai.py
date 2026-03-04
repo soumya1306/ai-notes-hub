@@ -4,7 +4,7 @@ from bs4 import BeautifulSoup
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = "gemini-2.5-flash"
-EMBEDDING_MODEL = "text-embedding-004"
+EMBEDDING_MODEL = "gemini-embedding-001"
 
 # for m in client.models.list():
 #   print(m)
@@ -58,6 +58,7 @@ async def embed_text(text: str) -> list[float]:
     response = await client.aio.models.embed_content(
         model=EMBEDDING_MODEL,
         contents=plain,
+        config={"output_dimensionality": 768},
     )
     if response.embeddings:
         return response.embeddings[0].values or []

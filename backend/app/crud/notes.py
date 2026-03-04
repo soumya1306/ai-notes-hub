@@ -59,7 +59,11 @@ def delete_note(db: Session, note_id: str, user_id: str) -> Note | None:
 
 
 def semantic_search(
-    db: Session, user_id: str, query_embedding: list[float], limit: int = 10
+    db: Session,
+    user_id: str,
+    query_embedding: list[float],
+    limit: int = 10,
+    min_score: float = 0.6,
 ) -> list[tuple[Note, float]]:
     results = (
         db.query(
@@ -71,4 +75,4 @@ def semantic_search(
         .limit(limit)
         .all()
     )
-    return results
+    return [row for row in results if row.score >= min_score]
