@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import NoteForm from "./components/NoteForm";
 import NotesList from "./components/NoteList";
 import "./App.css";
-import { notesApi } from "./api/notesAPi";
+import { notesApi, semanticSearch } from "./api/notesAPi";
 import RegisterForm from "./components/RegisterForm";
 import OAuthCallback from "./components/OAuthCallback";
 import LoginForm from "./components/LoginForm";
@@ -16,6 +16,8 @@ function NotesPage() {
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [searchMode, setSearchMode] = useState("keyword");
+  const [semanticLoading, setSemanticLoading] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -27,6 +29,8 @@ function NotesPage() {
       setLoading(false);
       return;
     }
+    if (searchMode === "semantic") return;
+
     const fetchNotes = async (query) => {
       try {
         const fetched = await notesApi.getNotes(refreshAccessToken, query);
@@ -39,6 +43,19 @@ function NotesPage() {
     };
     fetchNotes(debouncedSearch);
   }, [isAuthenticated, refreshAccessToken, debouncedSearch]);
+
+  const handleSemanticSearch = async () => {
+    if (!search.trim()) return;
+    setSemanticLoading(true);
+    try {
+      const results = await semanticSearch(search.trim());
+      setNotes(results.map((r) => r.note));
+    } catch (error) {
+      setError(err.message);
+    } finally {
+      setSemanticLoading(false);
+    }
+  };
 
   const addNote = async (content, tags) => {
     const newNote = await notesApi.createNote(
@@ -94,18 +111,58 @@ function NotesPage() {
       <NoteForm onAdd={addNote} />
 
       <div className="search-bar-wrapper">
-        <input
-          className="search-input"
-          type="text"
-          placeholder="Search notes or tags..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
-        {search && (
-          <button className="search-clear" onClick={() => setSearch("")}>
-            x
+        <div className="search-mode-toggle">
+          <button
+            className={`mode-btn ${searchMode === "keyword" ? "mode-btn--active" : ""}`}
+            onClick={() => {
+              setSearchMode("keyword");
+              setSearch("");
+            }}
+          >
+            Keyword
           </button>
-        )}
+          <button
+            className={`mode-btn ${searchMode === "semantic" ? "mode-btn--active" : ""}`}
+            onClick={() => {
+              setSearchMode("semantic");
+              setSearch("");
+            }}
+          >
+            ✨ Semantic
+          </button>
+        </div>
+
+        <div className="search-input-row">
+          <input
+            className="search-input"
+            type="text"
+            placeholder={
+              searchMode === "semantic"
+                ? "Ask anything about your notes..."
+                : "Search notes or tags"
+            }
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && searchMode === "semantic")
+                handleSemanticSearch();
+            }}
+          />
+          {searchMode === "semantic" && (
+            <button
+              className="btn btn-ai search-semantic-btn"
+              onClick={handleSemanticSearch}
+              disabled={semanticLoading || !search.trim()}
+            >
+              {semanticLoading ? "Searching..." : "Search"}
+            </button>
+          )}
+          {search && searchMode === "keyword" && (
+            <button className="search-clear" onClick={() => setSearch("")}>
+              x
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="notes-section">

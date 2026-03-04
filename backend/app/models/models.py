@@ -49,10 +49,12 @@ class Note(Base):
         UUID(as_uuid=True), ForeignKey("users.id"), nullable=False
     )
 
-    __table_args__ = Index(
-        "ix_notes_embedding_hnsw",
-        "embedding",
-        postgresql_using="hnsw",
-        postgresql_with={"m": 16, "ef_construction": 64},
-        postgresql_ops={"embedding": "vector_cosine_ops"},
+    __table_args__ = (
+        Index(
+            "ix_notes_embedding_hnsw",
+            "embedding",
+            postgresql_using="hnsw",
+            postgresql_with={"m": 16, "ef_construction": 64},
+            postgresql_ops={"embedding": "vector_cosine_ops"},
+        ),
     )

@@ -47,8 +47,8 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
 
 export const notesApi = {
   async getNotes(refreshAccessToken, search = "") {
-    const url = new URL(`${API_BASE}/notes/`)
-    if(search.trim()) url.searchParams.set("search", search.trim());
+    const url = new URL(`${API_BASE}/notes/`);
+    if (search.trim()) url.searchParams.set("search", search.trim());
     const res = await authFetch(url.toString(), {}, refreshAccessToken);
     if (!res.ok) throw new Error("Failed to fetch");
     return res.json();
@@ -120,4 +120,16 @@ export const autoTagNote = async (noteId) => {
 
   if (!res.ok) throw new Error("Failed to autotag");
   return res;
+};
+
+export const semanticSearch = async (queueMicrotask, limit = 10) => {
+  const token = localStorage.getItem("access_token");
+  const url = new URL(`${API_BASE}/notes/semantic`);
+  url.searchParams.set("q", q.trim());
+  url.searchParams.set("limit", limit);
+  const res = await fetch(url.toString(), {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error("Semantic search failed");
+  return res.json();
 };

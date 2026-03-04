@@ -71,7 +71,7 @@ async def update_note(
     embedding: list[float] | None = None
     try:
         embedding = await embed_text(note.content)
-    except:
+    except Exception:
         pass
 
     updated_note = crud.update_note(db, note_id, note, user_id, embedding)
@@ -118,6 +118,3 @@ async def autotags(
         raise HTTPException(status_code=404, detail="Note not found")
     tags = await generate_tags(note.content)
     return AutoTagsResponse(tags=tags)
-
-
-#
