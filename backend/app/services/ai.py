@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 MODEL = "gemini-2.5-flash"
+EMBEDDING_MODEL = "text-embedding-004"
 
 # for m in client.models.list():
 #   print(m)
@@ -18,6 +19,9 @@ def _strip_html(html: str) -> str:
 
 
 async def summarize_note(content: str) -> str:
+    """
+    Summarize the note with 2-3 concise sentences
+    """
     plain = _strip_html(content)
     prompt = f"Summarize the following note in 2-3 concise sentences. Return only the summary, no preamble \n\n {plain}"
     response = await client.aio.models.generate_content(model=MODEL, contents=prompt)
@@ -28,6 +32,9 @@ async def summarize_note(content: str) -> str:
 
 
 async def generate_tags(content: str) -> list[str]:
+    """
+    Generate tags from the note
+    """
     plain = _strip_html(content)
     prompt = f"Generate 3-5 short, relevant tags for the following note. Return only a comma-separated list of lowercase tags, no preamble:\n\n {plain}"
 
@@ -40,4 +47,18 @@ async def generate_tags(content: str) -> list[str]:
         tags = [tag.strip().lower() for tag in raw.split(",") if tag.strip()]
         return tags[:5]
 
+    return []
+
+
+async def embed_text(text: str) -> list[float]:
+    """
+    Generate a 768-dim embedding vector for the given text.
+    """
+    plain = _strip_html(text)
+    response = await client.aio.models.embed_content(
+        model=EMBEDDING_MODEL,
+        contents=plain,
+    )
+    if response.embeddings:
+        return response.embeddings[0].values or []
     return []

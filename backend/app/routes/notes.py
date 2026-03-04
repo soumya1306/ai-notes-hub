@@ -7,10 +7,11 @@ from app.schemas.schemas import (
     NoteResponse,
     SummarizeResponse,
     AutoTagsResponse,
+    SemanticSearchResult,
 )
 from app.core.auth import get_current_user_id
 import app.crud.notes as crud
-from app.services.ai import summarize_note, generate_tags
+from app.services.ai import summarize_note, generate_tags, embed_text
 
 router = APIRouter(prefix="/notes", tags=["Notes"])
 
@@ -22,7 +23,13 @@ async def create_note(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ):
-    new_note = crud.create_note(db, note, user_id)
+    embedding: list[float] | None = None
+    try:
+        embedding = await embed_text(note.content)
+    except:
+        pass
+
+    new_note = crud.create_note(db, note, user_id, embedding)
     return new_note
 
 
@@ -36,6 +43,23 @@ async def get_notes(
     return crud.get_notes(db, user_id, search=search)
 
 
+@router.get("/semantic", response_model=List[SemanticSearchResult], status_code=200)
+async def semantic_search(
+    q: str = Query(..., min_length=1, max_length=500),
+    limit: int = Query(default=10, ge=1, le=50),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    query_embedding = await embed_text(q)
+    results = crud.semantic_search(db, user_id, query_embedding, limit=limit)
+    return [
+        SemanticSearchResult(
+            note=NoteResponse.model_validate(note), score=round(score, 4)
+        )
+        for note, score in results
+    ]
+
+
 # update note
 @router.put("/{note_id}", response_model=NoteResponse, status_code=200)
 async def update_note(
@@ -44,7 +68,13 @@ async def update_note(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ):
-    updated_note = crud.update_note(db, note_id, note, user_id)
+    embedding: list[float] | None = None
+    try:
+        embedding = await embed_text(note.content)
+    except:
+        pass
+
+    updated_note = crud.update_note(db, note_id, note, user_id, embedding)
     if not updated_note:
         raise HTTPException(status_code=404, detail="Note not found")
     return updated_note
@@ -88,3 +118,6 @@ async def autotags(
         raise HTTPException(status_code=404, detail="Note not found")
     tags = await generate_tags(note.content)
     return AutoTagsResponse(tags=tags)
+
+
+#

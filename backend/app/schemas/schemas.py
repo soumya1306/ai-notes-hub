@@ -45,3 +45,8 @@ class SummarizeResponse(BaseModel):
 
 class AutoTagsResponse(BaseModel):
     tags: List[str]
+
+
+class SemanticSearchResult(BaseModel):
+    note: NoteResponse
+    score: float

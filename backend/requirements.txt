@@ -5,6 +5,7 @@ fastapi[standard]>=0.118.3
 sqlalchemy>=2.0.0
 psycopg2-binary>=2.9.0
 alembic>=1.13.0
+pgvector>=0.4.2
 
 # Password hashing — bcrypt 5.x has Python 3.14 support
 bcrypt>=5.0.0
