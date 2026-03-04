@@ -3,6 +3,7 @@ import { FaTrash, FaEdit, FaMagic, FaTags } from "react-icons/fa";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { summarizeNote, autoTagNote } from "../api/notesAPi";
+import { useAuth } from "../context/AuthContext";
 
 function InlineEditor({ initialContent, onSave, onCancel }) {
   const editor = useEditor({
@@ -37,6 +38,8 @@ export default function NotesList({ notes, onDelete, onUpdate, onTagFilter }) {
   const [summaries, setSummaries] = useState({});
   const [loadingAI, setLoadingAI] = useState({});
 
+  const { refreshAccessToken } = useAuth()
+
   const startEdit = (note) => {
     setEditingId(note.id);
   };
@@ -49,11 +52,11 @@ export default function NotesList({ notes, onDelete, onUpdate, onTagFilter }) {
   const handleSummarize = async (note) => {
     setLoadingAI((prev) => ({ ...prev, [note.id]: "summarize" }));
     try {
-      const res = await summarizeNote(note.id);
+      const res = await summarizeNote(note.id, refreshAccessToken);
       const data = await res.json();
       setSummaries((prev) => ({ ...prev, [note.id]: data.summary }));
     } catch (error) {
-      console.eror(error);
+      console.error(error);
       setSummaries((prev) => ({ ...prev, [note.id]: "Falied to summarize." }));
     } finally {
       setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
@@ -63,7 +66,7 @@ export default function NotesList({ notes, onDelete, onUpdate, onTagFilter }) {
   const handleAutoTags = async (note) => {
     setLoadingAI((prev) => ({ ...prev, [note.id]: "autotags" }));
     try {
-      const res = await autoTagNote(note.id);
+      const res = await autoTagNote(note.id, refreshAccessToken);
       const data = await res.json();
       onUpdate(note.id, note.content, data.tags);
     } catch (err) {

@@ -48,7 +48,7 @@ function NotesPage() {
     if (!search.trim()) return;
     setSemanticLoading(true);
     try {
-      const results = await semanticSearch(search.trim());
+      const results = await semanticSearch(search.trim(), refreshAccessToken);
       setNotes(results.map((r) => r.note));
     } catch (error) {
       setError(error.message);

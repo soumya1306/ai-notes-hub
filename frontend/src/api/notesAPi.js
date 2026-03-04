@@ -25,13 +25,17 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
       isRefreshing = null; // Reset once finished
 
       // 3. Retry the request with the brand new token
+      const retryHeaders = {
+        Authorization: `Bearer ${newToken}`,
+        ...options.headers,
+      };
+
+      if (options.body) {
+        retryHeaders["Content-Type"] = "application/json";
+      }
       const retried = await fetch(url, {
         ...options,
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${newToken}`,
-          ...options.headers,
-        },
+        headers: retryHeaders,
       });
       return retried;
     } catch (err) {
@@ -96,40 +100,37 @@ export const notesApi = {
   },
 };
 
-export const summarizeNote = async (noteId) => {
-  const token = localStorage.getItem("access_token");
-  const res = await fetch(`${API_BASE}/notes/${noteId}/summarize`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
+export const summarizeNote = async (noteId, refreshAccessToken) => {
+  const res = await authFetch(
+    `${API_BASE}/notes/${noteId}/summarize`,
+    {
+      method: "POST",
     },
-  });
+    refreshAccessToken,
+  );
 
   if (!res.ok) throw new Error("Failed to Summarize");
   return res;
 };
 
-export const autoTagNote = async (noteId) => {
-  const token = localStorage.getItem("access_token");
-  const res = await fetch(`${API_BASE}/notes/${noteId}/autotags`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem("access_token")}`,
+export const autoTagNote = async (noteId, refreshAccessToken) => {
+  const res = await authFetch(
+    `${API_BASE}/notes/${noteId}/autotags`,
+    {
+      method: "POST",
     },
-  });
+    refreshAccessToken,
+  );
 
   if (!res.ok) throw new Error("Failed to autotag");
   return res;
 };
 
-export const semanticSearch = async (q, limit = 10) => {
-  const token = localStorage.getItem("access_token");
+export const semanticSearch = async (q, refreshAccessToken, limit = 10) => {
   const url = new URL(`${API_BASE}/notes/semantic`);
   url.searchParams.set("q", q.trim());
   url.searchParams.set("limit", limit);
-  const res = await fetch(url.toString(), {
-    headers: { Authorization: `Bearer ${token}` },
-  });
+  const res = await authFetch(url.toString(), {}, refreshAccessToken);
   if (!res.ok) throw new Error("Semantic search failed");
   return res.json();
 };

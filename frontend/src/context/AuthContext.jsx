@@ -53,6 +53,7 @@ export function AuthProvider({ children }) {
     setRefreshToken(data.refresh_token);
     localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("refresh_token", data.refresh_token);
+    return data.access_token;
   }, [refreshToken]);
 
   const value = useMemo(
