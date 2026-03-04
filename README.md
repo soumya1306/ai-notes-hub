@@ -16,7 +16,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 7: Rich Text Editor (TipTap — toolbar, HTML rendering, smart mark handling)
 - ✅ Phase 8: Gemini AI — Summarize + Auto Tags (google-genai, gemini-2.5-flash-lite, BeautifulSoup)
 - ✅ Phase 9: Search & Filter (debounced full-text search, clickable tag filter pills)
-- 📅 Phase 10: Semantic Search (pgvector)
+- ✅ Phase 10: Semantic Search (pgvector, text-embedding-004, HNSW index, mode toggle UI)
 - 📅 Phase 11: RAG — Q&A on Notes
 - 📅 Phase 12: File Attachments (Cloudinary)
 - 📅 Phase 13: Real-time Collaboration (WebSockets)
@@ -30,17 +30,17 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 
 ## Tech Stack
 
-| Layer      | Tech                                                                              |
-|------------|-----------------------------------------------------------------------------------|
-| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons   |
-| Backend    | FastAPI, Pydantic v2, Python 3.14                                                 |
-| Database   | PostgreSQL 18, SQLAlchemy 2.0, Alembic                                            |
-| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)          |
-| AI         | google-genai, gemini-2.5-flash-lite, BeautifulSoup4, RAG pipeline (upcoming)     |
-| Storage    | Cloudinary (upcoming)                                                             |
-| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                           |
-| Monitoring | Sentry (upcoming)                                                                 |
-| Deployment | Vercel (frontend), Railway (backend)                                              |
+| Layer      | Tech                                                                                          |
+|------------|-----------------------------------------------------------------------------------------------|
+| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons               |
+| Backend    | FastAPI, Pydantic v2, Python 3.14                                                             |
+| Database   | PostgreSQL 18, SQLAlchemy 2.0, Alembic, pgvector                                             |
+| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                      |
+| AI         | google-genai, gemini-2.5-flash-lite, text-embedding-004, BeautifulSoup4, RAG (upcoming)      |
+| Storage    | Cloudinary (upcoming)                                                                         |
+| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                       |
+| Monitoring | Sentry (upcoming)                                                                             |
+| Deployment | Vercel (frontend), Railway (backend)                                                          |
 
 ## Features
 
@@ -65,10 +65,12 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - AI auto-tagging — Gemini generates and saves relevant tags automatically
 - Full-text search — Debounced search across note content and tags via array_to_string ilike
 - Clickable tag pills — Click any tag to instantly filter notes by that tag
+- Semantic search — pgvector + text-embedding-004 embeddings with HNSW cosine index
+- Search mode toggle — Switch between keyword and semantic search in the UI
+- Auto-embed on create/update — Embeddings generated and stored with every note save
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Semantic search with pgvector
 - RAG — Q&A on your own notes
 - File attachments with Cloudinary
 - Real-time collaboration with WebSockets
@@ -81,7 +83,7 @@ ai-notes-hub/
 │   └── src/
 │       ├── api/
 │       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
-│       │   └── notesAPi.js          # Notes CRUD + summarizeNote() + autoTagNote()
+│       │   └── notesAPi.js          # Notes CRUD + summarizeNote() + autoTagNote() + semanticSearch()
 │       ├── context/
 │       │   └── AuthContext.jsx      # Global auth state, loginWithTokens() for OAuth
 │       ├── components/
@@ -90,23 +92,23 @@ ai-notes-hub/
 │       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
 │       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
 │       │   └── NoteList.jsx         # Notes grid + inline edit + AI buttons + clickable tags
-│       ├── App.jsx                  # React Router v6 routes + ProtectedRoute + search state
+│       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
     ├── app/
     │   ├── models/
-    │   │   └── models.py            # User (+ google_id) + Note ORM models
+    │   │   └── models.py            # User + Note models, Vector(768) embedding + HNSW index
     │   ├── schemas/
-    │   │   └── schemas.py           # Pydantic v2 schemas incl. SummarizeResponse, AutoTagsResponse
+    │   │   └── schemas.py           # Pydantic v2 schemas incl. SemanticSearchResult
     │   ├── routes/
     │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes
-    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags + ?search= param
+    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags + /semantic
     │   ├── core/
     │   │   └── auth.py              # bcrypt + PyJWT + get_current_user_id
     │   ├── crud/
-    │   │   └── notes.py             # Per-user note ops + search filter + get_note_by_id
+    │   │   └── notes.py             # CRUD + search filter + semantic_search()
     │   ├── services/
-    │   │   └── ai.py                # Gemini AI service — summarize_note() + generate_tags()
+    │   │   └── ai.py                # summarize_note() + generate_tags() + embed_text()
     │   └── database.py              # SQLAlchemy engine + session
     ├── main.py                      # FastAPI app + SessionMiddleware + CORS
     ├── requirements.txt
@@ -135,7 +137,7 @@ VITE_API_BASE_URL=http://localhost:8000
 **Prerequisites**
 - Python 3.14+
 - Node.js 18+
-- PostgreSQL 18+
+- PostgreSQL 18+ with pgvector extension installed
 
 **Backend**
 ```bash
@@ -143,7 +145,6 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head
 uvicorn main:app --reload
 ```
 
@@ -169,14 +170,15 @@ npm run dev
 
 ### Notes — requires Bearer token
 
-| Method | Endpoint                | Description                             |
-|--------|-------------------------|-----------------------------------------|
-| GET    | /notes/                 | Get all notes (optional ?search= param) |
-| POST   | /notes/                 | Create a new note                       |
-| PUT    | /notes/{id}             | Update an existing note                 |
-| DELETE | /notes/{id}             | Delete a note                           |
-| POST   | /notes/{id}/summarize   | AI summary of note via Gemini           |
-| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini            |
+| Method | Endpoint                | Description                              |
+|--------|-------------------------|------------------------------------------|
+| GET    | /notes/                 | Get all notes (optional ?search= param)  |
+| GET    | /notes/semantic?q=      | Semantic similarity search via pgvector  |
+| POST   | /notes/                 | Create a new note + auto-embed           |
+| PUT    | /notes/{id}             | Update a note + re-embed                 |
+| DELETE | /notes/{id}             | Delete a note                            |
+| POST   | /notes/{id}/summarize   | AI summary of note via Gemini            |
+| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini             |
 
 ## Security Features
 
@@ -203,14 +205,15 @@ npm run dev
 
 ### notes table
 
-| Column     | Type      | Constraints          |
-|------------|-----------|----------------------|
-| id         | UUID      | PRIMARY KEY          |
-| content    | TEXT      | NOT NULL             |
-| tags       | VARCHAR[] | DEFAULT []           |
-| user_id    | UUID      | REFERENCES users(id) |
-| created_at | TIMESTAMP |                      |
-| updated_at | TIMESTAMP | NULLABLE             |
+| Column     | Type        | Constraints          |
+|------------|-------------|----------------------|
+| id         | UUID        | PRIMARY KEY          |
+| content    | TEXT        | NOT NULL             |
+| tags       | VARCHAR[]   | DEFAULT []           |
+| embedding  | vector(768) | NULLABLE             |
+| user_id    | UUID        | REFERENCES users(id) |
+| created_at | TIMESTAMP   |                      |
+| updated_at | TIMESTAMP   | NULLABLE             |
 
 ## Live Demo
 
@@ -218,7 +221,7 @@ npm run dev
 
 ## What's Next
 
-**Phase 10 — Semantic Search** — pgvector embeddings for similarity-based note retrieval
+**Phase 11 — RAG Q&A** — Ask natural language questions about your notes; Gemini answers using retrieved note context
 
 ---
 
