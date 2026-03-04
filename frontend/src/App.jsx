@@ -36,13 +36,13 @@ function NotesPage() {
         const fetched = await notesApi.getNotes(refreshAccessToken, query);
         setNotes(Array.isArray(fetched) ? fetched : []);
       } catch (err) {
-        setError(Error.message);
+        setError(err.message);
       } finally {
         setLoading(false);
       }
     };
     fetchNotes(debouncedSearch);
-  }, [isAuthenticated, refreshAccessToken, debouncedSearch]);
+  }, [isAuthenticated, refreshAccessToken, debouncedSearch, searchMode]);
 
   const handleSemanticSearch = async () => {
     if (!search.trim()) return;
@@ -51,7 +51,7 @@ function NotesPage() {
       const results = await semanticSearch(search.trim());
       setNotes(results.map((r) => r.note));
     } catch (error) {
-      setError(err.message);
+      setError(error.message);
     } finally {
       setSemanticLoading(false);
     }
