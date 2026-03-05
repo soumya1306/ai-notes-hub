@@ -134,3 +134,18 @@ export const semanticSearch = async (q, refreshAccessToken, limit = 10) => {
   if (!res.ok) throw new Error("Semantic search failed");
   return res.json();
 };
+
+export const askNotes = async (question, refreshAccessToken, top_k = 5) => {
+  const url = new URL(`${API_BASE}/notes/ask`);
+  url.searchParams.set("top_k", top_k);
+  const res = await authFetch(
+    url.toString(),
+    {
+      method: "POST",
+      body: JSON.stringify({ question }),
+    },
+    refreshAccessToken,
+  );
+  if (!res.ok) throw new Error("Failed to get answer");
+  return res.json();
+};

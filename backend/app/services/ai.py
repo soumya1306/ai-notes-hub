@@ -63,3 +63,33 @@ async def embed_text(text: str) -> list[float]:
     if response.embeddings:
         return response.embeddings[0].values or []
     return []
+
+
+async def ask_question(question: str, context_notes: list[str]) -> str:
+    """
+    Answer a natural-language question grounded in the user's notes.
+    context_notes: list of plain-text note contents (already stripped).
+    """
+
+    if not context_notes:
+        return "I couldn't find any relevant notes to answer your question."
+
+    numbered = "\n\n".join(
+        f"Note {i+1}:\n{note}" for i, note in enumerate(context_notes)
+    )
+
+    prompt = (
+        "You are a helpful assistant. Answer the user's question using ONLY"
+        "the notes provided below. Be concise and direct. "
+        "If notes don't contain enough information, say so.\n\n"
+        f"### Notes\n{numbered}\n\n"
+        f"### Question\n{question}\n\n"
+        "### Answer"
+    )
+
+    response = await client.aio.models.generate_content(model=MODEL, contents=prompt)
+
+    if response.text:
+        return response.text.strip()
+
+    return "Could note generate an answer. Please try again."

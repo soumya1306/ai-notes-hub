@@ -8,10 +8,18 @@ from app.schemas.schemas import (
     SummarizeResponse,
     AutoTagsResponse,
     SemanticSearchResult,
+    AskRequest,
+    AskResponse,
 )
 from app.core.auth import get_current_user_id
 import app.crud.notes as crud
-from app.services.ai import summarize_note, generate_tags, embed_text
+from app.services.ai import (
+    summarize_note,
+    generate_tags,
+    embed_text,
+    ask_question,
+    _strip_html,
+)
 
 router = APIRouter(prefix="/notes", tags=["Notes"])
 
@@ -43,6 +51,7 @@ async def get_notes(
     return crud.get_notes(db, user_id, search=search)
 
 
+# semantic search
 @router.get("/semantic", response_model=List[SemanticSearchResult], status_code=200)
 async def semantic_search(
     q: str = Query(..., min_length=1, max_length=500),
@@ -58,6 +67,28 @@ async def semantic_search(
         )
         for note, score in results
     ]
+
+
+# ask a qusetion
+@router.post("/ask", response_model=AskResponse, status_code=200)
+async def ask(
+    body: AskRequest,
+    top_k: int = Query(default=5, ge=1, le=20),
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    query_embedding = await embed_text(body.question)
+    rows = crud.semantic_search(db, user_id, query_embedding, limit=top_k)
+
+    context_notes: list[str] = []
+    source_ids: list = []
+
+    for note, _score in rows:
+        context_notes.append(_strip_html(note.content))
+        source_ids.append(note.id)
+
+    answer = await ask_question(body.question, context_notes)
+    return AskResponse(answer=answer, source_note_ids=source_ids)
 
 
 # update note

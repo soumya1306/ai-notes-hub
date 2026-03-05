@@ -50,3 +50,12 @@ class AutoTagsResponse(BaseModel):
 class SemanticSearchResult(BaseModel):
     note: NoteResponse
     score: float
+
+
+class AskRequest(BaseModel):
+    question: str = Field(..., min_length=1, max_length=1000)
+
+
+class AskResponse(BaseModel):
+    answer: str
+    source_note_ids: List[uuid.UUID]

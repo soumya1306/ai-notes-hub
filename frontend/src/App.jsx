@@ -8,6 +8,7 @@ import { notesApi, semanticSearch } from "./api/notesAPi";
 import RegisterForm from "./components/RegisterForm";
 import OAuthCallback from "./components/OAuthCallback";
 import LoginForm from "./components/LoginForm";
+import QAPanel from "./components/QAPanel";
 
 function NotesPage() {
   const { isAuthenticated, logout, refreshAccessToken } = useAuth();
@@ -164,6 +165,8 @@ function NotesPage() {
           )}
         </div>
       </div>
+
+      <QAPanel />
 
       <div className="notes-section">
         <NotesList

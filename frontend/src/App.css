@@ -679,6 +679,43 @@ body {
   flex-shrink: 0;
 }
 
+/*QA Panel*/
+.qa-panel {
+  margin: 0 30px 24px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #f5f3ff;
+  border: 2px solid #e0d4ff
+}
+
+.qa-title {
+  margin: 0 0 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #4c1d95
+}
+
+.qa-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.qa-input-row .search-input {
+  flex: 1;
+}
+
+.qa-answer {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: white;
+  border-left: 3px solid #7c3aed;
+  font-size: 14px;
+  color: #1e293b;
+  line-height: 1.6;
+}
+
 
 /* Mobile responsive */
 @media (max-width: 640px) {
