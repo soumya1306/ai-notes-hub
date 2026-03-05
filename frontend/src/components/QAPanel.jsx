@@ -18,7 +18,7 @@ export default function QAPanel() {
     setError(null);
 
     try {
-      const data = await askNotes(q);
+      const data = await askNotes(q, refreshAccessToken);
       setAnswer(data.answer);
     } catch (err) {
       setError(err.message);

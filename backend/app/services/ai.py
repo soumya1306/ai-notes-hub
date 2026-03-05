@@ -79,7 +79,7 @@ async def ask_question(question: str, context_notes: list[str]) -> str:
     )
 
     prompt = (
-        "You are a helpful assistant. Answer the user's question using ONLY"
+        "You are a helpful assistant. Answer the user's question using ONLY "
         "the notes provided below. Be concise and direct. "
         "If notes don't contain enough information, say so.\n\n"
         f"### Notes\n{numbered}\n\n"
@@ -92,4 +92,4 @@ async def ask_question(question: str, context_notes: list[str]) -> str:
     if response.text:
         return response.text.strip()
 
-    return "Could note generate an answer. Please try again."
+    return "Could not generate an answer. Please try again."
