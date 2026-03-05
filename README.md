@@ -14,10 +14,10 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 5: JWT Auth + Refresh Tokens (bcrypt, PyJWT, auto token refresh, frontend auth flow)
 - ✅ Phase 6: Google OAuth (Authlib 1.6.8, SessionMiddleware, React Router v6, OAuthCallback)
 - ✅ Phase 7: Rich Text Editor (TipTap — toolbar, HTML rendering, smart mark handling)
-- ✅ Phase 8: Gemini AI — Summarize + Auto Tags (google-genai, gemini-2.5-flash-lite, BeautifulSoup)
+- ✅ Phase 8: Gemini AI — Summarize + Auto Tags (google-genai, gemini-2.5-flash, BeautifulSoup)
 - ✅ Phase 9: Search & Filter (debounced full-text search, clickable tag filter pills)
-- ✅ Phase 10: Semantic Search (pgvector, text-embedding-004, HNSW index, mode toggle UI)
-- 📅 Phase 11: RAG — Q&A on Notes
+- ✅ Phase 10: Semantic Search (pgvector, gemini-embedding-001, HNSW index, mode toggle UI)
+- ✅ Phase 11: RAG Q&A — Ask natural language questions answered by Gemini using your notes as context
 - 📅 Phase 12: File Attachments (Cloudinary)
 - 📅 Phase 13: Real-time Collaboration (WebSockets)
 - 📅 Phase 14: Rate Limiting + Security Headers
@@ -34,9 +34,9 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 |------------|-----------------------------------------------------------------------------------------------|
 | Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons               |
 | Backend    | FastAPI, Pydantic v2, Python 3.14                                                             |
-| Database   | PostgreSQL 18, SQLAlchemy 2.0, Alembic, pgvector                                             |
+| Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector                                                       |
 | Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                      |
-| AI         | google-genai, gemini-2.5-flash-lite, text-embedding-004, BeautifulSoup4, RAG (upcoming)      |
+| AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A                |
 | Storage    | Cloudinary (upcoming)                                                                         |
 | DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                       |
 | Monitoring | Sentry (upcoming)                                                                             |
@@ -65,13 +65,13 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - AI auto-tagging — Gemini generates and saves relevant tags automatically
 - Full-text search — Debounced search across note content and tags via array_to_string ilike
 - Clickable tag pills — Click any tag to instantly filter notes by that tag
-- Semantic search — pgvector + text-embedding-004 embeddings with HNSW cosine index
+- Semantic search — pgvector + gemini-embedding-001 embeddings with HNSW cosine index
 - Search mode toggle — Switch between keyword and semantic search in the UI
 - Auto-embed on create/update — Embeddings generated and stored with every note save
+- RAG Q&A — Ask natural language questions; Gemini answers grounded in your own notes
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- RAG — Q&A on your own notes
 - File attachments with Cloudinary
 - Real-time collaboration with WebSockets
 
@@ -83,7 +83,7 @@ ai-notes-hub/
 │   └── src/
 │       ├── api/
 │       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
-│       │   └── notesAPi.js          # Notes CRUD + summarizeNote() + autoTagNote() + semanticSearch()
+│       │   └── notesAPi.js          # Notes CRUD + summarizeNote() + autoTagNote() + semanticSearch() + askNotes()
 │       ├── context/
 │       │   └── AuthContext.jsx      # Global auth state, loginWithTokens() for OAuth
 │       ├── components/
@@ -91,24 +91,25 @@ ai-notes-hub/
 │       │   ├── RegisterForm.jsx     # Register UI with useNavigate
 │       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
 │       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
-│       │   └── NoteList.jsx         # Notes grid + inline edit + AI buttons + clickable tags
-│       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle
+│       │   ├── NoteList.jsx         # Notes grid + inline edit + AI buttons + clickable tags
+│       │   └── QAPanel.jsx          # RAG Q&A panel — ask questions, get Gemini answers
+│       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle + QAPanel
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
     ├── app/
     │   ├── models/
     │   │   └── models.py            # User + Note models, Vector(768) embedding + HNSW index
     │   ├── schemas/
-    │   │   └── schemas.py           # Pydantic v2 schemas incl. SemanticSearchResult
+    │   │   └── schemas.py           # Pydantic v2 schemas incl. SemanticSearchResult, AskRequest, AskResponse
     │   ├── routes/
     │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes
-    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags + /semantic
+    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask
     │   ├── core/
     │   │   └── auth.py              # bcrypt + PyJWT + get_current_user_id
     │   ├── crud/
     │   │   └── notes.py             # CRUD + search filter + semantic_search()
     │   ├── services/
-    │   │   └── ai.py                # summarize_note() + generate_tags() + embed_text()
+    │   │   └── ai.py                # summarize_note() + generate_tags() + embed_text() + ask_question()
     │   └── database.py              # SQLAlchemy engine + session
     ├── main.py                      # FastAPI app + SessionMiddleware + CORS
     ├── requirements.txt
@@ -170,15 +171,16 @@ npm run dev
 
 ### Notes — requires Bearer token
 
-| Method | Endpoint                | Description                              |
-|--------|-------------------------|------------------------------------------|
-| GET    | /notes/                 | Get all notes (optional ?search= param)  |
-| GET    | /notes/semantic?q=      | Semantic similarity search via pgvector  |
-| POST   | /notes/                 | Create a new note + auto-embed           |
-| PUT    | /notes/{id}             | Update a note + re-embed                 |
-| DELETE | /notes/{id}             | Delete a note                            |
-| POST   | /notes/{id}/summarize   | AI summary of note via Gemini            |
-| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini             |
+| Method | Endpoint                | Description                                        |
+|--------|-------------------------|----------------------------------------------------|
+| GET    | /notes/                 | Get all notes (optional ?search= param)            |
+| GET    | /notes/semantic?q=      | Semantic similarity search via pgvector            |
+| POST   | /notes/ask              | RAG Q&A — answer a question using your notes       |
+| POST   | /notes/                 | Create a new note + auto-embed                     |
+| PUT    | /notes/{id}             | Update a note + re-embed                           |
+| DELETE | /notes/{id}             | Delete a note                                      |
+| POST   | /notes/{id}/summarize   | AI summary of note via Gemini                      |
+| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini                       |
 
 ## Security Features
 
@@ -218,10 +220,6 @@ npm run dev
 ## Live Demo
 
 🔗 [https://ai-notes-hub-omega.vercel.app/](https://ai-notes-hub-omega.vercel.app/)
-
-## What's Next
-
-**Phase 11 — RAG Q&A** — Ask natural language questions about your notes; Gemini answers using retrieved note context
 
 ---
 
