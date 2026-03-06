@@ -59,3 +59,15 @@ class AskRequest(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     source_note_ids: List[uuid.UUID]
+
+
+class AttachmentResponse(BaseModel):
+    id: uuid.UUID
+    note_id: uuid.UUID
+    file_url: str
+    public_id: str
+    filename: str
+    file_type: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

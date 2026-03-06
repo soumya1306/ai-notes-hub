@@ -30,3 +30,6 @@ google-genai>=1.0.0
 
 # HTML stripping — strip TipTap HTML before sending to Gemini
 beautifulsoup4>=4.14.0
+
+#cloudinary for attachments
+cloudinary>=1.41.0
