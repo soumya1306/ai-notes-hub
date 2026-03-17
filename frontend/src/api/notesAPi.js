@@ -3,50 +3,37 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 let isRefreshing = null; // Global flag to track ongoing refresh
 
 const authFetch = async (url, options = {}, refreshAccessToken) => {
-  const token = localStorage.getItem("access_token");
+  const buildHeaders = (token) => {
+    const isFormData = options.body instanceof FormData;
+    return {
+      ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    };
+  };
+
   const res = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: token ? `Bearer ${token}` : "",
-      ...options.headers,
-    },
+    headers: buildHeaders(localStorage.getItem("access_token")),
   });
 
-  //token expired or invalid - refresh and retry once
-  if (res.status === 401 && refreshAccessToken) {
-    try {
-      // 2. Queue management: If a refresh is already happening, wait for it
-      if (!isRefreshing) {
-        isRefreshing = refreshAccessToken();
-      }
+  if (res.status !== 401 || !refreshAccessToken) return res;
 
-      const newToken = await isRefreshing;
-      isRefreshing = null; // Reset once finished
+  try {
+    if (!isRefreshing) isRefreshing = refreshAccessToken();
+    const newToken = await isRefreshing;
+    isRefreshing = null;
 
-      // 3. Retry the request with the brand new token
-      const retryHeaders = {
-        Authorization: `Bearer ${newToken}`,
-        ...options.headers,
-      };
-
-      if (options.body) {
-        retryHeaders["Content-Type"] = "application/json";
-      }
-      const retried = await fetch(url, {
-        ...options,
-        headers: retryHeaders,
-      });
-      return retried;
-    } catch (err) {
-      // 4. Critical: If refresh fails (token revoked), log the user out
-      console.error("Refresh failed, redirecting to login...");
-      localStorage.clear();
-      window.location.href = "/login";
-      return Promise.reject(err);
-    }
+    return fetch(url, {
+      ...options,
+      headers: buildHeaders(newToken),
+    });
+  } catch (err) {
+    console.error("Refresh failed, redirecting to login...");
+    localStorage.clear();
+    window.location.href = "/login";
+    return Promise.reject(err);
   }
-  return res;
 };
 
 //crud operations
@@ -161,35 +148,35 @@ export const getAttachments = async (noteId, refreshAccessToken) => {
   );
   if (!res.ok) throw new Error("Failed to fetch attachments.");
   return res.json();
-}
+};
 
 export const uploadAttachments = async (noteId, file, refreshAccessToken) => {
   const formData = new FormData();
-  formData.append("file", file)
+  formData.append("file", file);
 
   const res = await authFetch(
     `${API_BASE}/attachments/notes/${noteId}`,
     {
       method: "POST",
-      body: formData
+      body: formData,
     },
-    refreshAccessToken
-  )
+    refreshAccessToken,
+  );
 
   if (!res.ok) {
-    const err = await res.json().catch(()=>({}));
+    const err = await res.json().catch(() => ({}));
     throw new Error(err.detail || "Upload failed.");
   }
   return res.json();
-}
+};
 
-export const deleteAttachment = async (attachmentId, refreshAccessToken ) => {
+export const deleteAttachment = async (attachmentId, refreshAccessToken) => {
   const res = await authFetch(
     `${API_BASE}/attachments/${attachmentId}`,
     {
-      method: "DELETE"
+      method: "DELETE",
     },
-    refreshAccessToken
-  )
-  if (!res.ok) throw new Error("Failed to delete attachment.")
-}
+    refreshAccessToken,
+  );
+  if (!res.ok) throw new Error("Failed to delete attachment.");
+};

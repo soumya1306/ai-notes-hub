@@ -12,7 +12,7 @@ import { deleteAttachment, getAttachments, uploadAttachments } from "../api/note
 
 const FileIcon = ({ filetype }) => {
   if (filetype.startsWith("image/")) return <FiImage />;
-  if (fileType === "application/pdf") return <FiFileText />;
+  if (filetype === "application/pdf") return <FiFileText />;
   return <FiFile />;
 };
 
