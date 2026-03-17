@@ -18,7 +18,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 9: Search & Filter (debounced full-text search, clickable tag filter pills)
 - ✅ Phase 10: Semantic Search (pgvector, gemini-embedding-001, HNSW index, mode toggle UI)
 - ✅ Phase 11: RAG Q&A — Ask natural language questions answered by Gemini using your notes as context
-- 📅 Phase 12: File Attachments (Cloudinary)
+- ✅ Phase 12: File Attachments (Cloudinary — signed server-side uploads, images/PDF/video per note)
 - 📅 Phase 13: Real-time Collaboration (WebSockets)
 - 📅 Phase 14: Rate Limiting + Security Headers
 - 📅 Phase 15: Unit + Integration Tests
@@ -37,7 +37,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 | Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector                                                       |
 | Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                      |
 | AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A                |
-| Storage    | Cloudinary (upcoming)                                                                         |
+| Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                                    |
 | DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                       |
 | Monitoring | Sentry (upcoming)                                                                             |
 | Deployment | Vercel (frontend), Railway (backend)                                                          |
@@ -69,10 +69,10 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Search mode toggle — Switch between keyword and semantic search in the UI
 - Auto-embed on create/update — Embeddings generated and stored with every note save
 - RAG Q&A — Ask natural language questions; Gemini answers grounded in your own notes
+- File attachments — Upload images, PDFs, videos, and text files to any note via Cloudinary
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- File attachments with Cloudinary
 - Real-time collaboration with WebSockets
 
 ## Project Structure
@@ -83,7 +83,7 @@ ai-notes-hub/
 │   └── src/
 │       ├── api/
 │       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
-│       │   └── notesAPi.js          # Notes CRUD + summarizeNote() + autoTagNote() + semanticSearch() + askNotes()
+│       │   └── notesAPi.js          # Notes CRUD + AI + semanticSearch() + askNotes() + attachment helpers
 │       ├── context/
 │       │   └── AuthContext.jsx      # Global auth state, loginWithTokens() for OAuth
 │       ├── components/
@@ -92,26 +92,30 @@ ai-notes-hub/
 │       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
 │       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
 │       │   ├── NoteList.jsx         # Notes grid + inline edit + AI buttons + clickable tags
+│       │   ├── NoteAttachments.jsx  # Per-note file upload/delete UI (Cloudinary)
 │       │   └── QAPanel.jsx          # RAG Q&A panel — ask questions, get Gemini answers
 │       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle + QAPanel
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
     ├── app/
     │   ├── models/
-    │   │   └── models.py            # User + Note models, Vector(768) embedding + HNSW index
+    │   │   └── models.py            # User + Note + Attachment models, Vector(768) + HNSW index
     │   ├── schemas/
-    │   │   └── schemas.py           # Pydantic v2 schemas incl. SemanticSearchResult, AskRequest, AskResponse
+    │   │   └── schemas.py           # Pydantic v2 schemas incl. AttachmentResponse
     │   ├── routes/
     │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes
-    │   │   └── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask
+    │   │   ├── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask
+    │   │   └── attachments.py       # /attachments upload, list, delete
     │   ├── core/
     │   │   └── auth.py              # bcrypt + PyJWT + get_current_user_id
     │   ├── crud/
-    │   │   └── notes.py             # CRUD + search filter + semantic_search()
+    │   │   ├── notes.py             # CRUD + search filter + semantic_search()
+    │   │   └── attachments.py       # Attachment CRUD — create, list, get, delete
     │   ├── services/
-    │   │   └── ai.py                # summarize_note() + generate_tags() + embed_text() + ask_question()
+    │   │   ├── ai.py                # summarize_note() + generate_tags() + embed_text() + ask_question()
+    │   │   └── cloudinary.py        # upload_file_to_cloudinary() + delete_file_from_cloudinary()
     │   └── database.py              # SQLAlchemy engine + session
-    ├── main.py                      # FastAPI app + SessionMiddleware + CORS
+    ├── main.py                      # FastAPI app + SessionMiddleware + CORS + all routers
     ├── requirements.txt
     └── .env
 ```
@@ -126,12 +130,65 @@ GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
 FRONTEND_URL=http://localhost:5173
 GEMINI_API_KEY=your-gemini-api-key
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-cloudinary-api-key
+CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 ```
 
 **Frontend `.env`**
 ```
 VITE_API_BASE_URL=http://localhost:8000
 ```
+
+## Database Setup
+
+> No Alembic — all schema changes are run as raw SQL directly in psql.
+
+**First time setup:**
+
+```sql
+CREATE DATABASE ai_notes_hub;
+\c ai_notes_hub
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+CREATE EXTENSION IF NOT EXISTS "vector";
+
+CREATE TABLE users (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    email VARCHAR(255) UNIQUE NOT NULL,
+    hashed_password TEXT,
+    google_id VARCHAR(255),
+    refresh_token TEXT
+);
+
+CREATE TABLE notes (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    content TEXT NOT NULL,
+    tags TEXT[] DEFAULT '{}',
+    embedding vector(768),
+    created_at TIMESTAMPTZ DEFAULT now(),
+    updated_at TIMESTAMPTZ DEFAULT now(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE attachments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    file_url TEXT NOT NULL,
+    public_id TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    file_type VARCHAR(50) NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX notes_embedding_hnsw_idx
+ON notes
+USING hnsw (embedding vector_cosine_ops)
+WITH (m = 16, ef_construction = 64);
+```
+
+> `pgvector` must be installed on your system first (`brew install pgvector` on Mac).
 
 ## Run Locally
 
@@ -171,27 +228,36 @@ npm run dev
 
 ### Notes — requires Bearer token
 
-| Method | Endpoint                | Description                                        |
-|--------|-------------------------|----------------------------------------------------|
-| GET    | /notes/                 | Get all notes (optional ?search= param)            |
-| GET    | /notes/semantic?q=      | Semantic similarity search via pgvector            |
-| POST   | /notes/ask              | RAG Q&A — answer a question using your notes       |
-| POST   | /notes/                 | Create a new note + auto-embed                     |
-| PUT    | /notes/{id}             | Update a note + re-embed                           |
-| DELETE | /notes/{id}             | Delete a note                                      |
-| POST   | /notes/{id}/summarize   | AI summary of note via Gemini                      |
-| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini                       |
+| Method | Endpoint                | Description                                  |
+|--------|-------------------------|----------------------------------------------|
+| GET    | /notes/                 | Get all notes (optional ?search= param)      |
+| GET    | /notes/semantic?q=      | Semantic similarity search via pgvector      |
+| POST   | /notes/ask              | RAG Q&A — answer a question using your notes |
+| POST   | /notes/                 | Create a new note + auto-embed               |
+| PUT    | /notes/{id}             | Update a note + re-embed                     |
+| DELETE | /notes/{id}             | Delete a note                                |
+| POST   | /notes/{id}/summarize   | AI summary of note via Gemini                |
+| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini                 |
+
+### Attachments — requires Bearer token
+
+| Method | Endpoint                     | Description                            |
+|--------|------------------------------|----------------------------------------|
+| POST   | /attachments/notes/{note_id} | Upload file and attach to note         |
+| GET    | /attachments/notes/{note_id} | List all attachments for a note        |
+| DELETE | /attachments/{attachment_id} | Delete attachment from Cloudinary + DB |
 
 ## Security Features
 
 - **bcrypt password hashing** — Salted and hashed, Python 3.14 compatible
-- **JWT access tokens** — 30-minute expiry (HS256)
+- **JWT access tokens** — 15-minute expiry (HS256)
 - **Refresh token rotation** — New refresh token on every refresh call
 - **Token revocation** — Logout clears refresh token in database
 - **Per-user data isolation** — All queries scoped to authenticated user
 - **Auto token refresh** — Frontend retries failed requests with refreshed token
 - **Google OAuth 2.0** — Authlib 1.6.8, PKCE flow, state validation via SessionMiddleware
 - **OAuth account linking** — Google account links to existing email/password account
+- **Signed Cloudinary uploads** — Files uploaded server-side using API secret, never exposed to client
 
 ## Database Schema
 
@@ -201,21 +267,34 @@ npm run dev
 |-----------------|---------|------------------|
 | id              | UUID    | PRIMARY KEY      |
 | email           | VARCHAR | UNIQUE, NOT NULL |
-| hashed_password | VARCHAR | NULLABLE         |
-| google_id       | VARCHAR | UNIQUE, NULLABLE |
-| refresh_token   | VARCHAR | NULLABLE         |
+| hashed_password | TEXT    | NULLABLE         |
+| google_id       | VARCHAR | NULLABLE         |
+| refresh_token   | TEXT    | NULLABLE         |
 
 ### notes table
 
-| Column     | Type        | Constraints          |
-|------------|-------------|----------------------|
-| id         | UUID        | PRIMARY KEY          |
-| content    | TEXT        | NOT NULL             |
-| tags       | VARCHAR[]   | DEFAULT []           |
-| embedding  | vector(768) | NULLABLE             |
-| user_id    | UUID        | REFERENCES users(id) |
-| created_at | TIMESTAMP   |                      |
-| updated_at | TIMESTAMP   | NULLABLE             |
+| Column     | Type        | Constraints                            |
+|------------|-------------|----------------------------------------|
+| id         | UUID        | PRIMARY KEY                            |
+| content    | TEXT        | NOT NULL                               |
+| tags       | TEXT[]      | DEFAULT []                             |
+| embedding  | vector(768) | NULLABLE                               |
+| user_id    | UUID        | REFERENCES users(id) ON DELETE CASCADE |
+| created_at | TIMESTAMPTZ | DEFAULT now()                          |
+| updated_at | TIMESTAMPTZ | NULLABLE                               |
+
+### attachments table
+
+| Column     | Type        | Constraints                            |
+|------------|-------------|----------------------------------------|
+| id         | UUID        | PRIMARY KEY                            |
+| note_id    | UUID        | REFERENCES notes(id) ON DELETE CASCADE |
+| user_id    | UUID        | REFERENCES users(id) ON DELETE CASCADE |
+| file_url   | TEXT        | NOT NULL                               |
+| public_id  | TEXT        | NOT NULL                               |
+| filename   | TEXT        | NOT NULL                               |
+| file_type  | VARCHAR(50) | NOT NULL                               |
+| created_at | TIMESTAMPTZ | DEFAULT now()                          |
 
 ## Live Demo
 
