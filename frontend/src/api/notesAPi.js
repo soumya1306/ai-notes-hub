@@ -49,6 +49,7 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
   return res;
 };
 
+//crud operations
 export const notesApi = {
   async getNotes(refreshAccessToken, search = "") {
     const url = new URL(`${API_BASE}/notes/`);
@@ -100,6 +101,7 @@ export const notesApi = {
   },
 };
 
+//AI summarize, autotags, and askAPI
 export const summarizeNote = async (noteId, refreshAccessToken) => {
   const res = await authFetch(
     `${API_BASE}/notes/${noteId}/summarize`,
@@ -149,3 +151,45 @@ export const askNotes = async (question, refreshAccessToken, top_k = 5) => {
   if (!res.ok) throw new Error("Failed to get answer");
   return res.json();
 };
+
+// Attachments
+export const getAttachments = async (noteId, refreshAccessToken) => {
+  const res = await authFetch(
+    `${API_BASE}/attachments/notes/${noteId}`,
+    {},
+    refreshAccessToken,
+  );
+  if (!res.ok) throw new Error("Failed to fetch attachments.");
+  return res.json();
+}
+
+export const uploadAttachments = async (noteId, file, refreshAccessToken) => {
+  const formData = new FormData();
+  formData.append("file", file)
+
+  const res = await authFetch(
+    `${API_BASE}/attachments/notes/${noteId}`,
+    {
+      method: "POST",
+      body: formData
+    },
+    refreshAccessToken
+  )
+
+  if (!res.ok) {
+    const err = await res.json().catch(()=>({}));
+    throw new Error(err.detail || "Upload failed.");
+  }
+  return res.json();
+}
+
+export const deleteAttachment = async (attachmentId, refreshAccessToken ) => {
+  const res = await authFetch(
+    `${API_BASE}/attachments/${attachmentId}`,
+    {
+      method: "DELETE"
+    },
+    refreshAccessToken
+  )
+  if (!res.ok) throw new Error("Failed to delete attachment.")
+}

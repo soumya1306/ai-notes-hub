@@ -52,7 +52,7 @@ class Note(Base):
     )
 
     attachments: Mapped[list["Attachment"]] = relationship(
-        "Attachment", back_populates="note", cascade="all delete-orphan"
+        "Attachment", back_populates="note", cascade="all, delete-orphan"
     )
 
     __table_args__ = (

@@ -4,6 +4,7 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import { summarizeNote, autoTagNote } from "../api/notesAPi";
 import { useAuth } from "../context/AuthContext";
+import { NoteAttachments } from "./NoteAttachments";
 
 function InlineEditor({ initialContent, onSave, onCancel }) {
   const editor = useEditor({
@@ -38,7 +39,7 @@ export default function NotesList({ notes, onDelete, onUpdate, onTagFilter }) {
   const [summaries, setSummaries] = useState({});
   const [loadingAI, setLoadingAI] = useState({});
 
-  const { refreshAccessToken } = useAuth()
+  const { refreshAccessToken } = useAuth();
 
   const startEdit = (note) => {
     setEditingId(note.id);
@@ -161,6 +162,8 @@ export default function NotesList({ notes, onDelete, onUpdate, onTagFilter }) {
                     : "Auto Tags"}
                 </button>
               </div>
+
+              <NoteAttachments noteId={note.id} />
             </div>
           )}
         </div>
