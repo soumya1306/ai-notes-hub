@@ -1,0 +1,12 @@
+# OS — not covered by either subfolder gitignore
+.DS_Store
+.DS_Store?
+**/.DS_Store
+
+# IDE — root level
+.vscode/
+.idea/
+
+# Misc root level
+*.log
+.vercel
