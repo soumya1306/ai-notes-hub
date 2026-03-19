@@ -19,7 +19,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 10: Semantic Search (pgvector, gemini-embedding-001, HNSW index, mode toggle UI)
 - ✅ Phase 11: RAG Q&A — Ask natural language questions answered by Gemini using your notes as context
 - ✅ Phase 12: File Attachments (Cloudinary — signed server-side uploads, images/PDF/video per note)
-- 📅 Phase 13: Real-time Collaboration (WebSockets)
+- ✅ Phase 13: Real-time Collaboration (WebSockets, note permissions, user search, share panel)
 - 📅 Phase 14: Rate Limiting + Security Headers
 - 📅 Phase 15: Unit + Integration Tests
 - 📅 Phase 16: Docker + GitHub Actions CI/CD
@@ -30,17 +30,18 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 
 ## Tech Stack
 
-| Layer      | Tech                                                                                          |
-|------------|-----------------------------------------------------------------------------------------------|
-| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons               |
-| Backend    | FastAPI, Pydantic v2, Python 3.14                                                             |
-| Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector                                                       |
-| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                      |
-| AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A                |
-| Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                                    |
-| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                       |
-| Monitoring | Sentry (upcoming)                                                                             |
-| Deployment | Vercel (frontend), Railway (backend)                                                          |
+| Layer      | Tech                                                                                        |
+|------------|---------------------------------------------------------------------------------------------|
+| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons             |
+| Backend    | FastAPI, Pydantic v2, Python 3.14                                                           |
+| Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector, Alembic                                           |
+| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                    |
+| AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A              |
+| Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                                  |
+| Real-time  | WebSockets (FastAPI native), per-note rooms, per-user notification channel                  |
+| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                     |
+| Monitoring | Sentry (upcoming)                                                                           |
+| Deployment | Vercel (frontend), Railway (backend)                                                        |
 
 ## Features
 
@@ -51,7 +52,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Auto token refresh — Seamless 401 handling, retries with new token
 - Refresh token rotation — New refresh token issued on every refresh
 - Token revocation on logout — Refresh token cleared server-side
-- Per-user note isolation — Users only see their own notes
+- Per-user note isolation — Users only see their own notes and shared notes
 - Secure password hashing — bcrypt with salt rounds
 - Auth context — Global auth state via React Context API
 - Protected routes — React Router v6 with ProtectedRoute wrapper
@@ -70,10 +71,20 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Auto-embed on create/update — Embeddings generated and stored with every note save
 - RAG Q&A — Ask natural language questions; Gemini answers grounded in your own notes
 - File attachments — Upload images, PDFs, videos, and text files to any note via Cloudinary
+- Real-time collaboration — Share notes with other users as editor or viewer
+- Live note updates — WebSocket-powered instant sync across all collaborators
+- Typing indicators — See who is editing a note in real time (shows their email)
+- Presence events — Join/leave notifications when collaborators connect or disconnect
+- Note permissions — Role-based access: owner, editor, viewer
+- Share panel — Search users by email with live dropdown, assign roles, revoke access
+- Per-user WS channel — `/ws/user` channel for instant `note_shared` push notifications
+- Owner-only delete — Only the note creator can delete; editors and viewers cannot
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Real-time collaboration with WebSockets
+- Rate limiting + security headers
+- Unit + integration tests
+- Docker + GitHub Actions CI/CD
 
 ## Project Structure
 
@@ -83,37 +94,46 @@ ai-notes-hub/
 │   └── src/
 │       ├── api/
 │       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
-│       │   └── notesAPi.js          # Notes CRUD + AI + semanticSearch() + askNotes() + attachment helpers
+│       │   └── notesAPi.js          # Notes CRUD + AI + semantic + ask + attachments + share/revoke/searchUsers
 │       ├── context/
 │       │   └── AuthContext.jsx      # Global auth state, loginWithTokens() for OAuth
+│       ├── hooks/
+│       │   └── useNoteSocket.js     # WebSocket hook — connect, send, auto-reconnect
 │       ├── components/
 │       │   ├── LoginForm.jsx        # Login UI + "Continue with Google" button
 │       │   ├── RegisterForm.jsx     # Register UI with useNavigate
 │       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
 │       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
-│       │   ├── NoteList.jsx         # Notes grid + inline edit + AI buttons + clickable tags
+│       │   ├── NoteList.jsx         # Notes grid + inline edit + AI buttons + SharePanel + typing indicators
 │       │   ├── NoteAttachments.jsx  # Per-note file upload/delete UI (Cloudinary)
 │       │   └── QAPanel.jsx          # RAG Q&A panel — ask questions, get Gemini answers
 │       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle + QAPanel
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
+    ├── alembic/                     # Alembic migration environment
+    │   ├── versions/                # Migration scripts (one per schema change)
+    │   └── env.py                   # Alembic config — reads DATABASE_URL from .env
+    ├── alembic.ini                  # Alembic project config
     ├── app/
     │   ├── models/
-    │   │   └── models.py            # User + Note + Attachment models, Vector(768) + HNSW index
+    │   │   └── models.py            # User + Note + NotePermission + Attachment models
     │   ├── schemas/
-    │   │   └── schemas.py           # Pydantic v2 schemas incl. AttachmentResponse
+    │   │   └── schemas.py           # Pydantic v2 schemas incl. NotePermissionResponse + ShareNoteRequest
     │   ├── routes/
     │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes
-    │   │   ├── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask
-    │   │   └── attachments.py       # /attachments upload, list, delete
+    │   │   ├── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask + /share + /collaborators
+    │   │   ├── users.py             # /users/search — search users by email for share panel
+    │   │   ├── attachments.py       # /attachments upload, list, delete
+    │   │   └── ws.py                # WebSocket routes — /ws/notes/{note_id} + /ws/user
     │   ├── core/
     │   │   └── auth.py              # bcrypt + PyJWT + get_current_user_id
     │   ├── crud/
-    │   │   ├── notes.py             # CRUD + search filter + semantic_search()
+    │   │   ├── notes.py             # CRUD + permissions + share_note + revoke_share + get_note_collaborators
     │   │   └── attachments.py       # Attachment CRUD — create, list, get, delete
     │   ├── services/
     │   │   ├── ai.py                # summarize_note() + generate_tags() + embed_text() + ask_question()
-    │   │   └── cloudinary.py        # upload_file_to_cloudinary() + delete_file_from_cloudinary()
+    │   │   ├── cloudinary.py        # upload_file_to_cloudinary() + delete_file_from_cloudinary()
+    │   │   └── ws.py                # ConnectionManager — rooms, connect, disconnect, broadcast, close_room
     │   └── database.py              # SQLAlchemy engine + session
     ├── main.py                      # FastAPI app + SessionMiddleware + CORS + all routers
     ├── requirements.txt
@@ -142,53 +162,31 @@ VITE_API_BASE_URL=http://localhost:8000
 
 ## Database Setup
 
-> No Alembic — all schema changes are run as raw SQL directly in psql.
+Schema is fully managed with **Alembic**. To create all tables from scratch:
 
-**First time setup:**
-
-```sql
-CREATE DATABASE ai_notes_hub;
-\c ai_notes_hub
-
-CREATE EXTENSION IF NOT EXISTS "pgcrypto";
-CREATE EXTENSION IF NOT EXISTS "vector";
-
-CREATE TABLE users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    email VARCHAR(255) UNIQUE NOT NULL,
-    hashed_password TEXT,
-    google_id VARCHAR(255),
-    refresh_token TEXT
-);
-
-CREATE TABLE notes (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    content TEXT NOT NULL,
-    tags TEXT[] DEFAULT '{}',
-    embedding vector(768),
-    created_at TIMESTAMPTZ DEFAULT now(),
-    updated_at TIMESTAMPTZ DEFAULT now(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
-);
-
-CREATE TABLE attachments (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    note_id UUID NOT NULL REFERENCES notes(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    file_url TEXT NOT NULL,
-    public_id TEXT NOT NULL,
-    filename TEXT NOT NULL,
-    file_type VARCHAR(50) NOT NULL,
-    created_at TIMESTAMPTZ DEFAULT now()
-);
-
-CREATE INDEX notes_embedding_hnsw_idx
-ON notes
-USING hnsw (embedding vector_cosine_ops)
-WITH (m = 16, ef_construction = 64);
+```bash
+cd backend
+alembic upgrade head
 ```
 
+That's it. Alembic runs all migrations in order and creates every table — `users`, `notes`, `attachments`, `note_permissions` — along with the HNSW index and all backfills.
+
 > `pgvector` must be installed on your system first (`brew install pgvector` on Mac).
+
+### Creating New Migrations
+
+Any future schema change should be done via Alembic:
+
+```bash
+# auto-generate a migration from model changes
+alembic revision --autogenerate -m "describe your change"
+
+# apply it
+alembic upgrade head
+
+# roll back one step if needed
+alembic downgrade -1
+```
 
 ## Run Locally
 
@@ -203,6 +201,7 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+alembic upgrade head
 uvicorn main:app --reload
 ```
 
@@ -228,16 +227,25 @@ npm run dev
 
 ### Notes — requires Bearer token
 
-| Method | Endpoint                | Description                                  |
-|--------|-------------------------|----------------------------------------------|
-| GET    | /notes/                 | Get all notes (optional ?search= param)      |
-| GET    | /notes/semantic?q=      | Semantic similarity search via pgvector      |
-| POST   | /notes/ask              | RAG Q&A — answer a question using your notes |
-| POST   | /notes/                 | Create a new note + auto-embed               |
-| PUT    | /notes/{id}             | Update a note + re-embed                     |
-| DELETE | /notes/{id}             | Delete a note                                |
-| POST   | /notes/{id}/summarize   | AI summary of note via Gemini                |
-| POST   | /notes/{id}/autotags    | AI-generated tags via Gemini                 |
+| Method | Endpoint                           | Description                                  |
+|--------|------------------------------------|----------------------------------------------|
+| GET    | /notes/                            | Get all notes owned or shared with user      |
+| GET    | /notes/semantic?q=                 | Semantic similarity search via pgvector      |
+| POST   | /notes/ask                         | RAG Q&A — answer a question using your notes |
+| POST   | /notes/                            | Create a new note + auto-embed               |
+| PUT    | /notes/{id}                        | Update a note + re-embed (owner or editor)   |
+| DELETE | /notes/{id}                        | Delete a note (owner only)                   |
+| POST   | /notes/{id}/summarize              | AI summary of note via Gemini                |
+| POST   | /notes/{id}/autotags               | AI-generated tags via Gemini                 |
+| POST   | /notes/{id}/share                  | Share note with a user by email (owner only) |
+| DELETE | /notes/{id}/share/{target_user_id} | Revoke a user's access (owner only)          |
+| GET    | /notes/{id}/collaborators          | List all collaborators and their roles       |
+
+### Users — requires Bearer token
+
+| Method | Endpoint         | Description                                    |
+|--------|------------------|------------------------------------------------|
+| GET    | /users/search?q= | Search users by email fragment for share panel |
 
 ### Attachments — requires Bearer token
 
@@ -247,17 +255,26 @@ npm run dev
 | GET    | /attachments/notes/{note_id} | List all attachments for a note        |
 | DELETE | /attachments/{attachment_id} | Delete attachment from Cloudinary + DB |
 
+### WebSockets
+
+| Endpoint                      | Description                                                  |
+|-------------------------------|--------------------------------------------------------------|
+| WS /ws/notes/{note_id}?token= | Per-note room — live updates, typing indicators, presence    |
+| WS /ws/user?token=            | Per-user channel — receives `note_shared` push notifications |
+
 ## Security Features
 
 - **bcrypt password hashing** — Salted and hashed, Python 3.14 compatible
 - **JWT access tokens** — 15-minute expiry (HS256)
 - **Refresh token rotation** — New refresh token on every refresh call
 - **Token revocation** — Logout clears refresh token in database
-- **Per-user data isolation** — All queries scoped to authenticated user
+- **Per-user data isolation** — All queries scoped via permissions table
 - **Auto token refresh** — Frontend retries failed requests with refreshed token
 - **Google OAuth 2.0** — Authlib 1.6.8, PKCE flow, state validation via SessionMiddleware
 - **OAuth account linking** — Google account links to existing email/password account
 - **Signed Cloudinary uploads** — Files uploaded server-side using API secret, never exposed to client
+- **Role-based note access** — owner / editor / viewer enforced at every CRUD operation
+- **Owner-only destructive actions** — Only owners can delete notes or revoke collaborator access
 
 ## Database Schema
 
@@ -282,6 +299,17 @@ npm run dev
 | user_id    | UUID        | REFERENCES users(id) ON DELETE CASCADE |
 | created_at | TIMESTAMPTZ | DEFAULT now()                          |
 | updated_at | TIMESTAMPTZ | NULLABLE                               |
+
+### note_permissions table
+
+| Column     | Type        | Constraints                                   |
+|------------|-------------|-----------------------------------------------|
+| id         | UUID        | PRIMARY KEY                                   |
+| note_id    | UUID        | REFERENCES notes(id) ON DELETE CASCADE        |
+| user_id    | UUID        | REFERENCES users(id) ON DELETE CASCADE        |
+| role       | VARCHAR(10) | CHECK (role IN ('owner', 'editor', 'viewer')) |
+| created_at | TIMESTAMPTZ | DEFAULT now()                                 |
+|            |             | UNIQUE (note_id, user_id)                     |
 
 ### attachments table
 
