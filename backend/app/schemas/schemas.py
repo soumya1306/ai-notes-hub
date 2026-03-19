@@ -15,6 +15,7 @@ class NoteResponse(BaseModel):
     tags: List[str]
     created_at: datetime
     updated_at: Optional[datetime] = None
+    user_id: uuid.UUID
 
     model_config = {"from_attributes": True}
 
@@ -68,6 +69,22 @@ class AttachmentResponse(BaseModel):
     public_id: str
     filename: str
     file_type: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class ShareNoteRequest(BaseModel):
+    email: EmailStr
+    role: str = Field(default="editor", pattern="^(editor|viewer)$")
+
+
+class NotePermissionResponse(BaseModel):
+    id: uuid.UUID
+    note_id: uuid.UUID
+    user_id: uuid.UUID
+    email: str
+    role: str
     created_at: datetime
 
     model_config = {"from_attributes": True}

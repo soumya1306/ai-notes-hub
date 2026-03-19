@@ -21,6 +21,8 @@ from app.services.ai import (
     _strip_html,
 )
 
+from app.services.ws import manager
+
 router = APIRouter(prefix="/notes", tags=["Notes"])
 
 
@@ -106,8 +108,21 @@ async def update_note(
         pass
 
     updated_note = crud.update_note(db, note_id, note, user_id, embedding)
+
     if not updated_note:
         raise HTTPException(status_code=404, detail="Note not found")
+
+    await manager.broadcast(
+        note_id,
+        {
+            "type": "note_updated",
+            "note_id": note_id,
+            "content": updated_note.content,
+            "tags": updated_note.tags,
+            "updated_by": user_id,
+        },
+        exclude_user=user_id,
+    )
     return updated_note
 
 
@@ -121,6 +136,14 @@ async def delete_note(
     deleted = crud.delete_note(db, note_id, user_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Note not found")
+
+    await manager.broadcast(
+        note_id,
+        {"type": "note_deleted", "note_id": note_id, "deleted_by": user_id},
+        exclude_user=user_id,
+    )
+
+    await manager.close_room(note_id)
 
 
 # summaraize a note

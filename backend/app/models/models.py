@@ -29,6 +29,9 @@ class User(Base):
     attachments: Mapped[list["Attachment"]] = relationship(
         "Attachment", back_populates="user", cascade="all, delete-orphan"
     )
+    note_permissions: Mapped[list["NotePermission"]] = relationship(
+        "NotePermission", back_populates="user", cascade="all delete-orphan"
+    )
 
 
 class Note(Base):
@@ -54,6 +57,9 @@ class Note(Base):
     attachments: Mapped[list["Attachment"]] = relationship(
         "Attachment", back_populates="note", cascade="all, delete-orphan"
     )
+    permissions: Mapped[list["NotePermission"]] = relationship(
+        "NotePermission", back_populates="note", cascade="all, delete-orphan"
+    )
 
     __table_args__ = (
         Index(
@@ -64,6 +70,24 @@ class Note(Base):
             postgresql_ops={"embedding": "vector_cosine_ops"},
         ),
     )
+
+
+class NotePermission(Base):
+    __tablename__ = "note_permissions"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, default=uuid.uuid4
+    )
+    note_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("notes.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(String(10), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
+
+    note: Mapped["Note"] = relationship("Note", back_populates="permissions")
+    user: Mapped["User"] = relationship("User", back_populates="note_permissions")
 
 
 class Attachment(Base):
