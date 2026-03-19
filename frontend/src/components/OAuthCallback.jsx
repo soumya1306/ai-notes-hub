@@ -8,7 +8,7 @@ export default function OAuthCallback() {
   const navigate = useNavigate();
   
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams(window.location.hash.slice(1));
     const access_token = params.get("access_token");
     const refresh_token = params.get("refresh_token");
 

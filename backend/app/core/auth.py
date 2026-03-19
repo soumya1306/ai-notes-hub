@@ -9,6 +9,8 @@ import os
 SECRET_KEY = os.getenv("SECRET_KEY")
 if not SECRET_KEY:
     raise RuntimeError("SECRET_KEY environment variable is required and must be set")
+if len(SECRET_KEY.encode()) < 32:
+    raise RuntimeError("SECRET_KEY must be at least 32 bytes long (RFC 7518 §3.2)")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7
@@ -32,9 +34,9 @@ def create_token(data: dict, expires_delta: timedelta) -> str:
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-def create_access_token(user_id: str) -> str:
+def create_access_token(user_id: str, email: str) -> str:
     return create_token(
-        {"sub": user_id, "type": "access"},
+        {"sub": user_id, "email": email, "type": "access"},
         timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
     )
 

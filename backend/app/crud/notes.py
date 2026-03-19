@@ -42,9 +42,9 @@ def _is_owner(db: Session, note_id: str, user_id: str) -> bool:
 #  CRUD  #
 
 
-def get_notes(db: Session, user_id: str, search: str | None = None) -> list[Note]:
+def get_notes(db: Session, user_id: str, search: str | None = None) -> list[tuple[Note, str]]:
     query = (
-        db.query(Note)
+        db.query(Note, NotePermission.role)
         .join(NotePermission, NotePermission.note_id == Note.id)
         .filter(NotePermission.user_id == user_id)
     )
@@ -52,7 +52,7 @@ def get_notes(db: Session, user_id: str, search: str | None = None) -> list[Note
         term = f"%{search.lower()}%"
         tags_as_str = func.array_to_string(Note.tags, " ")
         query = query.filter(Note.content.ilike(term) | tags_as_str.ilike(term))
-    return query.distinct().order_by(Note.created_at.desc()).all()
+    return query.order_by(Note.created_at.desc()).all()
 
 
 def get_note_by_id(db: Session, note_id: str, user_id: str) -> Note | None:

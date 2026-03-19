@@ -74,3 +74,31 @@ async def note_ws(
                 },
                 exclude_user=user_id,
             )
+
+
+@router.websocket("/ws/user")
+async def user_ws(
+    websocket: WebSocket,
+    token: str = Query(...),
+):
+    """Per-user notification channel. Used to push events like note_shared."""
+    try:
+        user_id = verify_token(token, "access")
+    except Exception:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    room = f"user:{user_id}"
+    await manager.connect(room, user_id, websocket)
+
+    try:
+        while True:
+            raw = await websocket.receive_text()
+            try:
+                msg = json.loads(raw)
+                if msg.get("type") == "ping":
+                    await websocket.send_text(json.dumps({"type": "pong"}))
+            except json.JSONDecodeError:
+                pass
+    except WebSocketDisconnect:
+        manager.disconnect(room, user_id)

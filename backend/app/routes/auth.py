@@ -42,7 +42,7 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
     if not user or not verify_password(payload.password, user.hashed_password):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
-    access = create_access_token(str(user.id))
+    access = create_access_token(str(user.id), user.email)
     refresh = create_refresh_token(str(user.id))
     user.refresh_token = refresh
     db.commit()
@@ -60,7 +60,7 @@ def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
     if not user or user.refresh_token != payload.refresh_token:
         raise HTTPException(status_code=401, detail="Refresh token revoked or invalid")
 
-    access = create_access_token(str(user.id))
+    access = create_access_token(str(user.id), user.email)
     refresh = create_refresh_token(str(user.id))
     user.refresh_token = refresh
     db.commit()
@@ -132,7 +132,7 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
         db.refresh(user)
 
     # Create tokens for the user
-    access = create_access_token(str(user.id))
+    access = create_access_token(str(user.id), user.email)
     refresh = create_refresh_token(str(user.id))
 
     # Save refresh token in DB
@@ -141,6 +141,6 @@ async def google_callback(request: Request, db: Session = Depends(get_db)):
 
     # Redirect to frontend with tokens as query params (or you can set cookies instead)
     redirect_url = (
-        f"{FRONTEND_URL}/oauth-callback?access_token={access}&refresh_token={refresh}"
+        f"{FRONTEND_URL}/oauth-callback#access_token={access}&refresh_token={refresh}"
     )
     return RedirectResponse(url=redirect_url)

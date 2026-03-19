@@ -219,7 +219,7 @@ body {
 .notes-grid {
   display: grid;
   gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: 1fr;
 }
 
 .note-card {
@@ -833,6 +833,153 @@ body {
 
 .btn-icon {
   font-size: 0.95rem;
+}
+
+/* ── Phase 13b: Sharing ─────────────────────────────────────── */
+.btn-share {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.share-panel {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f8f7ff;
+  border: 1px solid #e0e7ff;
+  border-radius: 10px;
+}
+
+.share-input-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.share-email-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  min-width: 160px;
+}
+
+.share-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 160px;
+}
+
+.share-search-wrapper .share-email-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.share-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  list-style: none;
+  margin: 0;
+  padding: 4px 0;
+  z-index: 100;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.share-suggestion-item {
+  padding: 7px 12px;
+  font-size: 0.85rem;
+  color: #374151;
+  cursor: pointer;
+}
+
+.share-suggestion-item:hover {
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.share-role-select {
+  padding: 6px 8px;
+  border: 1px solid #c7d2fe;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  background: white;
+}
+
+.share-error {
+  color: #dc2626;
+  font-size: 0.78rem;
+  margin-top: 6px;
+}
+
+.collaborators-list {
+  list-style: none;
+  padding: 0;
+  margin: 10px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.collaborator-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.82rem;
+}
+
+.collaborator-email {
+  flex: 1;
+  color: #374151;
+}
+
+.collaborator-role {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.role-owner  { background: #fef3c7; color: #92400e; }
+.role-editor { background: #d1fae5; color: #065f46; }
+.role-viewer { background: #e0e7ff; color: #3730a3; }
+
+.btn-revoke {
+  background: none;
+  border: none;
+  color: #ef4444;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.btn-revoke:hover { background: #fee2e2; }
+
+.role-badge {
+  margin-left: 8px;
+  background: #e0e7ff;
+  color: #3730a3;
+  font-size: 0.7rem;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
 }
 
 

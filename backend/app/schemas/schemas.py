@@ -16,6 +16,7 @@ class NoteResponse(BaseModel):
     created_at: datetime
     updated_at: Optional[datetime] = None
     user_id: uuid.UUID
+    my_role: str = "owner"
 
     model_config = {"from_attributes": True}
 

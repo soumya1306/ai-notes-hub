@@ -3,6 +3,7 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 let isRefreshing = null; // Global flag to track ongoing refresh
 
 const authFetch = async (url, options = {}, refreshAccessToken) => {
+
   const buildHeaders = (token) => {
     const isFormData = options.body instanceof FormData;
     return {
@@ -30,6 +31,7 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
     });
   } catch (err) {
     console.error("Refresh failed, redirecting to login...");
+    isRefreshing = null;
     localStorage.clear();
     window.location.href = "/login";
     return Promise.reject(err);
@@ -179,4 +181,47 @@ export const deleteAttachment = async (attachmentId, refreshAccessToken) => {
     refreshAccessToken,
   );
   if (!res.ok) throw new Error("Failed to delete attachment.");
+};
+
+export const shareNote = async (
+  noteId,
+  email,
+  role = "editor",
+  refreshAccessToken,
+) => {
+  const res = await authFetch(
+    `${API_BASE}/notes/${noteId}/share`,
+    { method: "POST", body: JSON.stringify({ email, role }) },
+    refreshAccessToken,
+  );
+  if (!res.ok) throw new Error("Failed to share note");
+  return res.json();
+};
+
+export const revokeShare = async (noteId, targetUserId, refreshAccessToken) => {
+  const res = await authFetch(
+    `${API_BASE}/notes/${noteId}/share/${targetUserId}`,
+    { method: "DELETE" },
+    refreshAccessToken,
+  );
+  if (!res.ok) throw new Error("Failed to revoke share");
+  // 204 No Content — no body to parse
+};
+
+export const getCollaborators = async (noteId, refreshAccessToken) => {
+  const res = await authFetch(
+    `${API_BASE}/notes/${noteId}/collaborators`,
+    {},
+    refreshAccessToken,
+  );
+  if (!res.ok) throw new Error("Failed to fetch collaborators");
+  return res.json();
+};
+
+export const searchUsers = async (q, refreshAccessToken) => {
+  const url = new URL(`${API_BASE}/users/search`);
+  url.searchParams.set("q", q);
+  const res = await authFetch(url.toString(), {}, refreshAccessToken);
+  if (!res.ok) throw new Error("Failed to search users");
+  return res.json();
 };

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import NoteForm from "./components/NoteForm";
@@ -10,8 +10,10 @@ import OAuthCallback from "./components/OAuthCallback";
 import LoginForm from "./components/LoginForm";
 import QAPanel from "./components/QAPanel";
 
+const WS_BASE = import.meta.env.VITE_WS_BASE_URL || "ws://localhost:8000";
+
 function NotesPage() {
-  const { isAuthenticated, logout, refreshAccessToken } = useAuth();
+  const { isAuthenticated, logout, refreshAccessToken, accessToken } = useAuth();
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -25,6 +27,13 @@ function NotesPage() {
     return () => clearTimeout(timer);
   }, [search]);
 
+  // refs so WS handler always sees the latest values without reconnecting
+  const debouncedSearchRef = useRef(debouncedSearch);
+  const refreshRef = useRef(refreshAccessToken);
+  useEffect(() => { debouncedSearchRef.current = debouncedSearch; }, [debouncedSearch]);
+  useEffect(() => { refreshRef.current = refreshAccessToken; });
+
+  // fetch (and re-fetch) notes whenever search/mode changes
   useEffect(() => {
     if (!isAuthenticated) {
       setLoading(false);
@@ -44,6 +53,50 @@ function NotesPage() {
     };
     fetchNotes(debouncedSearch);
   }, [isAuthenticated, refreshAccessToken, debouncedSearch, searchMode]);
+
+  // Per-user WS — backend pushes "note_shared" so we refetch instantly
+  useEffect(() => {
+    if (!isAuthenticated || !accessToken) return;
+    let alive = true;
+    let ws = null;
+
+    const connect = () => {
+      if (!alive) return;
+      ws = new WebSocket(`${WS_BASE}/ws/user?token=${accessToken}`);
+      ws.onmessage = (e) => {
+        try {
+          const msg = JSON.parse(e.data);
+          if (msg.type === "note_shared") {
+            notesApi
+              .getNotes(refreshRef.current, debouncedSearchRef.current)
+              .then((fetched) => setNotes(Array.isArray(fetched) ? fetched : []))
+              .catch(() => {});
+          }
+        } catch { /* ignore malformed frames */ }
+      };
+      ws.onclose = () => { if (alive) setTimeout(connect, 3000); };
+      ws.onerror = () => ws.close();
+    };
+
+    connect();
+
+    return () => {
+      alive = false;
+      if (ws) { ws.onclose = null; ws.close(); }
+    };
+  }, [isAuthenticated, accessToken]);
+
+  // 60 s fallback poll — catches anything the WS misses (e.g. if it's down)
+  useEffect(() => {
+    if (!isAuthenticated || searchMode === "semantic") return;
+    const interval = setInterval(async () => {
+      try {
+        const fetched = await notesApi.getNotes(refreshRef.current, debouncedSearchRef.current);
+        setNotes(Array.isArray(fetched) ? fetched : []);
+      } catch { /* silently ignore */ }
+    }, 60_000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, searchMode]);
 
   const handleSemanticSearch = async () => {
     if (!search.trim()) return;
@@ -83,7 +136,13 @@ function NotesPage() {
     );
 
     setNotes((prev) =>
-      prev.map((note) => (note.id === id ? updatedNote : note)),
+      prev.map((n) => (n.id === id ? { ...n, ...updatedNote } : n)),
+    );
+  };
+
+  const liveUpdateNote = (id, content, tags) => {
+    setNotes((prev) =>
+      prev.map((note) => (note.id === id ? { ...note, content, tags } : note)),
     );
   };
 
@@ -174,6 +233,7 @@ function NotesPage() {
           onDelete={deleteNote}
           onUpdate={updateNote}
           onTagFilter={(tag) => setSearch(tag)}
+          onLiveUpdate={liveUpdateNote}
         />
       </div>
     </div>

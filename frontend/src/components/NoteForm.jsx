@@ -2,7 +2,7 @@ import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import {Extension} from "@tiptap/core";
 import Code from "@tiptap/extension-code"
-import { useCallback, useState } from "react";
+import { useState } from "react";
 
 const DoubleEnterExitMark = Extension.create({
   name: "doubleEnterExitMark",

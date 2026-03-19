@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.database import get_db
+from app.models.models import NotePermission
 from app.schemas.schemas import (
     NoteCreate,
     NoteResponse,
@@ -52,7 +53,11 @@ async def get_notes(
     user_id: str = Depends(get_current_user_id),
     search: str | None = Query(default=None, max_length=100),
 ):
-    return crud.get_notes(db, user_id, search=search)
+    rows = crud.get_notes(db, user_id, search=search)
+    return [
+        NoteResponse.model_validate(note).model_copy(update={"my_role": role})
+        for note, role in rows
+    ]
 
 
 # semantic search
@@ -194,7 +199,34 @@ async def share_note(
             status_code=404,
             detail="Note not found, user not found or you are not the owner",
         )
-    return perm
+
+    # reload with user relationship so email is available for serialization
+    perm_id = perm.id
+    loaded_perm = (
+        db.query(NotePermission)
+        .options(joinedload(NotePermission.user))
+        .filter(NotePermission.id == perm_id)
+        .first()
+    )
+    if not loaded_perm:
+        raise HTTPException(status_code=500, detail="Failed to reload permission")
+
+    # notify the target user instantly via their personal WS channel
+    await manager.broadcast(
+        f"user:{str(loaded_perm.user_id)}",
+        {"type": "note_shared", "note_id": note_id},
+    )
+
+    return NotePermissionResponse.model_validate(
+        {
+            "id": loaded_perm.id,
+            "note_id": loaded_perm.note_id,
+            "user_id": loaded_perm.user_id,
+            "email": loaded_perm.user.email,
+            "role": loaded_perm.role,
+            "created_at": loaded_perm.created_at,
+        }
+    )
 
 
 @router.delete("/{note_id}/share/{target_user_id}", status_code=204)
