@@ -125,9 +125,9 @@ async def update_note(
         note_id,
         {
             "type": "note_updated",
-            "note_id": note_id,
+            "note_id": str(updated_note.id),
             "content": updated_note.content,
-            "tags": updated_note.tags,
+            "tags": list(updated_note.tags or []),
             "updated_by": user_id,
         },
         exclude_user=user_id,

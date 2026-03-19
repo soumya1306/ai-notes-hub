@@ -2,7 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { FaTrash, FaEdit, FaMagic, FaTags, FaShare } from "react-icons/fa";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import { summarizeNote, autoTagNote, getCollaborators, shareNote, revokeShare, searchUsers } from "../api/notesAPi";
+import {
+  summarizeNote,
+  autoTagNote,
+  getCollaborators,
+  shareNote,
+  revokeShare,
+  searchUsers,
+} from "../api/notesAPi";
 import { useAuth } from "../context/AuthContext";
 import { NoteAttachments } from "./NoteAttachments";
 import { useNoteSocket } from "../hooks/useNoteSocket";
@@ -97,7 +104,12 @@ function SharePanel({ noteId, onClose }) {
     setLoading(true);
     setError(null);
     try {
-      const perm = await shareNote(noteId, email.trim(), role, refreshAccessToken);
+      const perm = await shareNote(
+        noteId,
+        email.trim(),
+        role,
+        refreshAccessToken,
+      );
       setCollaborators((prev) => {
         const existing = prev.find((c) => c.user_id === perm.user_id);
         if (existing) {
@@ -220,7 +232,12 @@ function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
     }
   };
 
-  useEffect(() => () => { if (typingTimer.current) clearTimeout(typingTimer.current); }, []);
+  useEffect(
+    () => () => {
+      if (typingTimer.current) clearTimeout(typingTimer.current);
+    },
+    [],
+  );
 
   const { send } = useNoteSocket(note.id, accessToken, handleWsMessage);
 
@@ -334,14 +351,13 @@ function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
                 <FaShare /> {showSharePanel ? "Close" : "Share"}
               </button>
             )}
-
-            {showSharePanel && isOwner && (
-              <SharePanel
-                noteId={note.id}
-                onClose={() => setShowSharePanel(false)}
-              />
-            )}
           </div>
+          {showSharePanel && isOwner && (
+            <SharePanel
+              noteId={note.id}
+              onClose={() => setShowSharePanel(false)}
+            />
+          )}
 
           <div className="note-actions" style={{ marginTop: "8px" }}>
             <button

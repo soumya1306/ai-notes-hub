@@ -142,7 +142,7 @@ def semantic_search(
             (1 - Note.embedding.cosine_distance(query_embedding)).label("score"),
         )
         .join(NotePermission, NotePermission.note_id == Note.id)
-        .filter(Note.user_id == user_id, Note.embedding.is_not(None))
+        .filter(NotePermission.user_id == user_id, Note.embedding.is_not(None))
         .order_by(Note.embedding.cosine_distance(query_embedding))
         .limit(limit)
         .all()
