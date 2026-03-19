@@ -30,7 +30,7 @@ class User(Base):
         "Attachment", back_populates="user", cascade="all, delete-orphan"
     )
     note_permissions: Mapped[list["NotePermission"]] = relationship(
-        "NotePermission", back_populates="user", cascade="all delete-orphan"
+        "NotePermission", back_populates="user", cascade="all, delete-orphan"
     )
 
 
@@ -47,7 +47,7 @@ class Note(Base):
     embedding: Mapped[Optional[List[float]]] = mapped_column(Vector(768), nullable=True)
 
     # Use server_default or a callable (no parens) for timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     user_id: Mapped[uuid.UUID] = mapped_column(
@@ -91,6 +91,10 @@ class NotePermission(Base):
 
     note: Mapped["Note"] = relationship("Note", back_populates="permissions")
     user: Mapped["User"] = relationship("User", back_populates="note_permissions")
+
+    __table_args__ = (
+        Index("ix_note_permissions_note_user", "note_id", "user_id"),
+    )
 
 
 class Attachment(Base):

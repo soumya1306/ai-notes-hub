@@ -1,3 +1,4 @@
+import asyncio
 import os
 import cloudinary
 import cloudinary.uploader
@@ -7,7 +8,7 @@ cloudinary.config(
     cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
     api_key=os.getenv("CLOUDINARY_API_KEY"),
     api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    source=True,
+    secure=True,
 )
 
 ALLOWED_TYPES: set[str] = {
@@ -49,7 +50,8 @@ async def upload_file_to_cloudinary(file: UploadFile, user_id: str) -> dict:
         resource_type = "raw"
 
     try:
-        result: dict = cloudinary.uploader.upload(
+        result: dict = await asyncio.to_thread(
+            cloudinary.uploader.upload,
             contents,
             resource_type=resource_type,
             folder=f"ai-notes-hub/{user_id}",
@@ -81,6 +83,6 @@ async def delete_file_from_cloudinary(public_id: str, file_type: str) -> None:
         resource_type = "raw"
 
     try:
-        cloudinary.uploader.destroy(public_id, resource_type=resource_type)
+        await asyncio.to_thread(cloudinary.uploader.destroy, public_id, resource_type=resource_type)
     except Exception as exc:
         print(f"[cloudinary] destroy failed for {public_id}: {exc}")

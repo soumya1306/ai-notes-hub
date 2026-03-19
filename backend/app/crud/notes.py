@@ -1,8 +1,8 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import func
 from pgvector.sqlalchemy import Vector
 from app.models.models import Note, NotePermission, User
-from app.schemas.schemas import NoteCreate
+from app.schemas.schemas import NoteCreate, NotePermissionResponse
 from datetime import datetime, timezone
 
 #  Helper Functions  #
@@ -46,19 +46,19 @@ def get_notes(db: Session, user_id: str, search: str | None = None) -> list[Note
     query = (
         db.query(Note)
         .join(NotePermission, NotePermission.note_id == Note.id)
-        .filter(Note.user_id == user_id)
+        .filter(NotePermission.user_id == user_id)
     )
     if search:
         term = f"%{search.lower()}%"
         tags_as_str = func.array_to_string(Note.tags, " ")
         query = query.filter(Note.content.ilike(term) | tags_as_str.ilike(term))
-    return query.order_by(Note.created_at.desc()).all()
+    return query.distinct().order_by(Note.created_at.desc()).all()
 
 
 def get_note_by_id(db: Session, note_id: str, user_id: str) -> Note | None:
     if not _has_access(db, note_id, user_id):
         return None
-    return db.query(Note).filter(Note.id == note_id, Note.user_id == user_id).first()
+    return db.query(Note).filter(Note.id == note_id).first()
 
 
 def create_note(
@@ -103,7 +103,7 @@ def update_note(
     if not perm:
         return None
 
-    db_note = db.query(Note).filter(Note.id == note_id, Note.user_id == user_id).first()
+    db_note = db.query(Note).filter(Note.id == note_id).first()
 
     if db_note:
         db_note.content = note.content
@@ -116,15 +116,17 @@ def update_note(
     return db_note
 
 
-def delete_note(db: Session, note_id: str, user_id: str) -> Note | None:
-    if not _is_owner(db, note_id, user_id):
-        return None
+def delete_note(db: Session, note_id: str, user_id: str) -> tuple[bool, str]:
 
-    db_note = db.query(Note).filter(Note.id == note_id, Note.user_id == user_id).first()
-    if db_note:
-        db.delete(db_note)
-        db.commit()
-    return db_note
+    db_note = db.query(Note).filter(Note.id == note_id).first()
+    if not db_note:
+        return False, "not_found"
+    if not _is_owner(db, note_id, user_id):
+        return False, "forbidden"
+
+    db.delete(db_note)
+    db.commit()
+    return True, "ok"
 
 
 def semantic_search(
@@ -163,6 +165,10 @@ def share_note(
 
     target_user = db.query(User).filter(User.email == email).first()
     if not target_user:
+        return None
+
+    # Prevent the owner from downgrading their own role
+    if str(target_user.id) == owner_id:
         return None
 
     # upsert- update role if already shared
@@ -213,29 +219,31 @@ def revoke_share(db: Session, note_id: str, owner_id: str, target_user_id: str) 
     return True
 
 
-def get_note_collaborators(db: Session, note_id: str, user_id: str) -> list[dict]:
+def get_note_collaborators(db: Session, note_id: str, user_id: str) -> list[NotePermissionResponse] | None:
     """
     Returns all collaborators for a note. Requires access.
     """
 
     if not _has_access(db, note_id, user_id):
-        return []
+        return None
 
-    rows = (
-        db.query(NotePermission, User.email)
-        .join(User, User.id == NotePermission.user_id)
+    perms = (
+        db.query(NotePermission)
+        .options(joinedload(NotePermission.user))
         .filter(NotePermission.note_id == note_id)
         .all()
     )
 
     return [
-        {
-            "id": str(perm.id),
-            "note": str(perm.note_id),
-            "user_id": str(perm.user_id),
-            "email": email,
-            "role": perm.role,
-            "created_at": perm.created_at,
-        }
-        for perm, email in rows
+        NotePermissionResponse.model_validate(
+            {
+                "id": perm.id,
+                "note_id": perm.note_id,
+                "user_id": perm.user_id,
+                "email": perm.user.email,
+                "role": perm.role,
+                "created_at": perm.created_at,
+            }
+        )
+        for perm in perms
     ]

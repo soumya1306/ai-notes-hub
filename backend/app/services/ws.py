@@ -5,7 +5,7 @@ import json
 
 class ConnectionManager:
     """
-    Tracks all active WebSocket connections, keyed bt node_id room.
+    Tracks all active WebSocket connections, keyed by note_id room.
     """
 
     def __init__(self) -> None:
@@ -20,7 +20,7 @@ class ConnectionManager:
         Removes a single user from a room. Cleans up the empty rooms.
         """
         self._rooms[note_id].pop(user_id, None)
-        if note_id not in self._rooms and not self._rooms[note_id]:
+        if note_id in self._rooms and not self._rooms[note_id]:
             del self._rooms[note_id]
 
     async def broadcast(
@@ -49,7 +49,7 @@ class ConnectionManager:
 
     async def close_room(self, note_id: str) -> None:
         """
-        Focibly close every WebSocket in a room and remove the room.
+        Forcibly close every WebSocket in a room and remove the room.
         Called when a note is deleted, so all the connected clients must be kicked with WS_1001_GOING_AWAY.
         """
 

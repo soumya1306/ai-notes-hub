@@ -88,3 +88,10 @@ class NotePermissionResponse(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class UserSearchResult(BaseModel):
+    id: uuid.UUID
+    email: EmailStr
+
+    model_config = {"from_attributes": True}

@@ -10,6 +10,8 @@ from app.schemas.schemas import (
     SemanticSearchResult,
     AskRequest,
     AskResponse,
+    NotePermissionResponse,
+    ShareNoteRequest,
 )
 from app.core.auth import get_current_user_id
 import app.crud.notes as crud
@@ -36,7 +38,7 @@ async def create_note(
     embedding: list[float] | None = None
     try:
         embedding = await embed_text(note.content)
-    except:
+    except Exception:
         pass
 
     new_note = crud.create_note(db, note, user_id, embedding)
@@ -71,7 +73,7 @@ async def semantic_search(
     ]
 
 
-# ask a qusetion
+# ask a question
 @router.post("/ask", response_model=AskResponse, status_code=200)
 async def ask(
     body: AskRequest,
@@ -110,7 +112,9 @@ async def update_note(
     updated_note = crud.update_note(db, note_id, note, user_id, embedding)
 
     if not updated_note:
-        raise HTTPException(status_code=404, detail="Note not found")
+        raise HTTPException(
+            status_code=404, detail="Note not found or insufficient permissions"
+        )
 
     await manager.broadcast(
         note_id,
@@ -133,9 +137,11 @@ async def delete_note(
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
 ):
-    deleted = crud.delete_note(db, note_id, user_id)
-    if not deleted:
+    success, reason = crud.delete_note(db, note_id, user_id)
+    if reason == "not_found":
         raise HTTPException(status_code=404, detail="Note not found")
+    if reason == "forbidden":
+        raise HTTPException(status_code=403, detail="Only the owner can delete it")
 
     await manager.broadcast(
         note_id,
@@ -146,7 +152,7 @@ async def delete_note(
     await manager.close_room(note_id)
 
 
-# summaraize a note
+# summarize a note
 @router.post("/{note_id}/summarize", response_model=SummarizeResponse, status_code=200)
 async def summarize(
     note_id: str,
@@ -172,3 +178,54 @@ async def autotags(
         raise HTTPException(status_code=404, detail="Note not found")
     tags = await generate_tags(note.content)
     return AutoTagsResponse(tags=tags)
+
+
+@router.post("/{note_id}/share", response_model=NotePermissionResponse, status_code=201)
+async def share_note(
+    note_id: str,
+    body: ShareNoteRequest,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    perm = crud.share_note(db, note_id, user_id, body.email, body.role)
+
+    if not perm:
+        raise HTTPException(
+            status_code=404,
+            detail="Note not found, user not found or you are not the owner",
+        )
+    return perm
+
+
+@router.delete("/{note_id}/share/{target_user_id}", status_code=204)
+async def revoke_share(
+    note_id: str,
+    target_user_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    success = crud.revoke_share(db, note_id, user_id, target_user_id)
+
+    if not success:
+        raise HTTPException(
+            status_code=403,
+            detail="Note not found, target user not found, you are not the owner or you are trying to revoke owner's permission",
+        )
+
+
+@router.get(
+    "/{note_id}/collaborators",
+    response_model=List[NotePermissionResponse],
+    status_code=200,
+)
+async def get_collaborators(
+    note_id: str,
+    db: Session = Depends(get_db),
+    user_id: str = Depends(get_current_user_id),
+):
+    collaborators = crud.get_note_collaborators(db, note_id, user_id)
+    if collaborators is None:
+        raise HTTPException(
+            status_code=404, detail="Note not found or insufficient permissions"
+        )
+    return collaborators

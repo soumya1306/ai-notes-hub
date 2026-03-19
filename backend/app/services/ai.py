@@ -13,7 +13,7 @@ EMBEDDING_MODEL = "gemini-embedding-001"
 
 def _strip_html(html: str) -> str:
     """
-    Strip TipTap HTML tags - plain text gives significatly better Gemini results
+    Strip TipTap HTML tags - plain text gives significantly better Gemini results
     """
     return BeautifulSoup(html, "html.parser").get_text(separator=" ").strip()
 

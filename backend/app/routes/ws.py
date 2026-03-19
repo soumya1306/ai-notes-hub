@@ -3,6 +3,7 @@ from app.core.auth import verify_token
 from app.database import get_db
 from app.models.models import User
 from app.services.ws import manager
+import contextlib
 import json
 
 router = APIRouter(tags=["WebSockets"])
@@ -20,10 +21,9 @@ async def note_ws(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
         return
 
-    db = next(get_db())
-    user = db.query(User).filter(User.id == user_id).first()
-    user_email = user.email if user else user_id
-    db.close()
+    with contextlib.closing(next(get_db())) as db:
+        user = db.query(User).filter(User.id == user_id).first()
+        user_email = user.email if user else user_id
 
     await manager.connect(note_id, user_id, websocket)
 

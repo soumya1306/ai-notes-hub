@@ -1,7 +1,6 @@
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.core.auth import get_current_user_id
 from app.schemas.schemas import AttachmentResponse
