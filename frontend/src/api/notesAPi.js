@@ -18,6 +18,14 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
     headers: buildHeaders(localStorage.getItem("access_token")),
   });
 
+  if (res.status === 429) {
+    const retryAfter = res.headers.get("Retry-After") ?? 60;
+    const err = new Error(`Rate limit hit. Try again in ${retryAfter} seconds.`);
+    err.status = 429
+    err.retryAfter = parseInt(retryAfter, 10);
+    throw err;
+  }
+
   if (res.status !== 401 || !refreshAccessToken) return res;
 
   try {
