@@ -20,7 +20,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 11: RAG Q&A — Ask natural language questions answered by Gemini using your notes as context
 - ✅ Phase 12: File Attachments (Cloudinary — signed server-side uploads, images/PDF/video per note)
 - ✅ Phase 13: Real-time Collaboration (WebSockets, note permissions, user search, share panel)
-- 📅 Phase 14: Rate Limiting + Security Headers
+- ✅ Phase 14: Rate Limiting + Security Headers (slowapi, Retry-After, SecurityHeadersMiddleware)
 - 📅 Phase 15: Unit + Integration Tests
 - 📅 Phase 16: Docker + GitHub Actions CI/CD
 - 📅 Phase 17: Sentry + Performance Monitoring
@@ -31,7 +31,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 ## Tech Stack
 
 | Layer      | Tech                                                                                        |
-|------------|---------------------------------------------------------------------------------------------|
+|------------|---------------------------------------------------------------------------------------------| 
 | Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons             |
 | Backend    | FastAPI, Pydantic v2, Python 3.14                                                           |
 | Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector, Alembic                                           |
@@ -39,6 +39,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 | AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A              |
 | Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                                  |
 | Real-time  | WebSockets (FastAPI native), per-note rooms, per-user notification channel                  |
+| Security   | slowapi rate limiting, SecurityHeadersMiddleware, HSTS, CSP, X-Frame-Options               |
 | DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                     |
 | Monitoring | Sentry (upcoming)                                                                           |
 | Deployment | Vercel (frontend), Railway (backend)                                                        |
@@ -79,10 +80,12 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Share panel — Search users by email with live dropdown, assign roles, revoke access
 - Per-user WS channel — `/ws/user` channel for instant `note_shared` push notifications
 - Owner-only delete — Only the note creator can delete; editors and viewers cannot
+- Rate limiting — slowapi in-memory token bucket on all auth + AI + write endpoints
+- Retry-After header — 429 responses include exact wait time; frontend surfaces friendly message
+- Security headers — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy on every response
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Rate limiting + security headers
 - Unit + integration tests
 - Docker + GitHub Actions CI/CD
 
@@ -94,7 +97,7 @@ ai-notes-hub/
 │   └── src/
 │       ├── api/
 │       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
-│       │   └── notesAPi.js          # Notes CRUD + AI + semantic + ask + attachments + share/revoke/searchUsers
+│       │   └── notesAPi.js          # Notes CRUD + AI + semantic + ask + attachments + share/revoke/searchUsers + 429 handling
 │       ├── context/
 │       │   └── AuthContext.jsx      # Global auth state, loginWithTokens() for OAuth
 │       ├── hooks/
@@ -120,13 +123,17 @@ ai-notes-hub/
     │   ├── schemas/
     │   │   └── schemas.py           # Pydantic v2 schemas incl. NotePermissionResponse + ShareNoteRequest
     │   ├── routes/
-    │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes
-    │   │   ├── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask + /share + /collaborators
+    │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes + rate limits
+    │   │   ├── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask + /share + /collaborators + rate limits
     │   │   ├── users.py             # /users/search — search users by email for share panel
     │   │   ├── attachments.py       # /attachments upload, list, delete
     │   │   └── ws.py                # WebSocket routes — /ws/notes/{note_id} + /ws/user
     │   ├── core/
-    │   │   └── auth.py              # bcrypt + PyJWT + get_current_user_id
+    │   │   ├── auth.py              # bcrypt + PyJWT + get_current_user_id
+    │   │   └── limiter.py           # Shared slowapi Limiter instance (get_remote_address)
+    │   ├── middleware/
+    │   │   ├── __init__.py
+    │   │   └── security.py          # SecurityHeadersMiddleware — HSTS, X-Frame-Options, Referrer-Policy etc.
     │   ├── crud/
     │   │   ├── notes.py             # CRUD + permissions + share_note + revoke_share + get_note_collaborators
     │   │   └── attachments.py       # Attachment CRUD — create, list, get, delete
@@ -135,7 +142,7 @@ ai-notes-hub/
     │   │   ├── cloudinary.py        # upload_file_to_cloudinary() + delete_file_from_cloudinary()
     │   │   └── ws.py                # ConnectionManager — rooms, connect, disconnect, broadcast, close_room
     │   └── database.py              # SQLAlchemy engine + session
-    ├── main.py                      # FastAPI app + SessionMiddleware + CORS + all routers
+    ├── main.py                      # FastAPI app + middlewares + limiter state + 429 handler + all routers
     ├── requirements.txt
     └── .env
 ```
@@ -216,30 +223,30 @@ npm run dev
 
 ### Authentication
 
-| Method | Endpoint              | Description                          |
-|--------|-----------------------|--------------------------------------|
-| POST   | /auth/register        | Create new user account              |
-| POST   | /auth/login           | Login and receive tokens             |
-| POST   | /auth/refresh         | Get new access + refresh tokens      |
-| POST   | /auth/logout          | Revoke refresh token server-side     |
-| GET    | /auth/google/login    | Redirect to Google OAuth consent     |
-| GET    | /auth/google/callback | Handle Google redirect, issue tokens |
+| Method | Endpoint              | Description                          | Rate Limit  |
+|--------|-----------------------|--------------------------------------|-------------|
+| POST   | /auth/register        | Create new user account              | 5/min       |
+| POST   | /auth/login           | Login and receive tokens             | 10/min      |
+| POST   | /auth/refresh         | Get new access + refresh tokens      | 20/min      |
+| POST   | /auth/logout          | Revoke refresh token server-side     | —           |
+| GET    | /auth/google/login    | Redirect to Google OAuth consent     | —           |
+| GET    | /auth/google/callback | Handle Google redirect, issue tokens | —           |
 
 ### Notes — requires Bearer token
 
-| Method | Endpoint                           | Description                                  |
-|--------|------------------------------------|----------------------------------------------|
-| GET    | /notes/                            | Get all notes owned or shared with user      |
-| GET    | /notes/semantic?q=                 | Semantic similarity search via pgvector      |
-| POST   | /notes/ask                         | RAG Q&A — answer a question using your notes |
-| POST   | /notes/                            | Create a new note + auto-embed               |
-| PUT    | /notes/{id}                        | Update a note + re-embed (owner or editor)   |
-| DELETE | /notes/{id}                        | Delete a note (owner only)                   |
-| POST   | /notes/{id}/summarize              | AI summary of note via Gemini                |
-| POST   | /notes/{id}/autotags               | AI-generated tags via Gemini                 |
-| POST   | /notes/{id}/share                  | Share note with a user by email (owner only) |
-| DELETE | /notes/{id}/share/{target_user_id} | Revoke a user's access (owner only)          |
-| GET    | /notes/{id}/collaborators          | List all collaborators and their roles       |
+| Method | Endpoint                           | Description                                  | Rate Limit |
+|--------|------------------------------------|----------------------------------------------|------------|
+| GET    | /notes/                            | Get all notes owned or shared with user      | —          |
+| GET    | /notes/semantic?q=                 | Semantic similarity search via pgvector      | 30/min     |
+| POST   | /notes/ask                         | RAG Q&A — answer a question using your notes | 20/min     |
+| POST   | /notes/                            | Create a new note + auto-embed               | 60/min     |
+| PUT    | /notes/{id}                        | Update a note + re-embed (owner or editor)   | 60/min     |
+| DELETE | /notes/{id}                        | Delete a note (owner only)                   | —          |
+| POST   | /notes/{id}/summarize              | AI summary of note via Gemini                | 20/min     |
+| POST   | /notes/{id}/autotags               | AI-generated tags via Gemini                 | 20/min     |
+| POST   | /notes/{id}/share                  | Share note with a user by email (owner only) | 30/min     |
+| DELETE | /notes/{id}/share/{target_user_id} | Revoke a user's access (owner only)          | —          |
+| GET    | /notes/{id}/collaborators          | List all collaborators and their roles       | —          |
 
 ### Users — requires Bearer token
 
@@ -275,6 +282,9 @@ npm run dev
 - **Signed Cloudinary uploads** — Files uploaded server-side using API secret, never exposed to client
 - **Role-based note access** — owner / editor / viewer enforced at every CRUD operation
 - **Owner-only destructive actions** — Only owners can delete notes or revoke collaborator access
+- **Rate limiting** — slowapi token bucket; brute-force protection on auth, cost protection on AI endpoints
+- **Retry-After** — Every 429 response includes exact seconds to wait; frontend surfaces friendly ⏳ message
+- **Security headers** — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection on every response
 
 ## Database Schema
 
