@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session, joinedload
 from typing import List
 from app.database import get_db
@@ -15,6 +15,7 @@ from app.schemas.schemas import (
     ShareNoteRequest,
 )
 from app.core.auth import get_current_user_id
+from app.core.limiter import limiter
 import app.crud.notes as crud
 from app.services.ai import (
     summarize_note,
@@ -31,7 +32,9 @@ router = APIRouter(prefix="/notes", tags=["Notes"])
 
 # create note
 @router.post("/", response_model=NoteResponse, status_code=201)
+@limiter.limit("60/minute")
 async def create_note(
+    request: Request,
     note: NoteCreate,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
@@ -62,7 +65,9 @@ async def get_notes(
 
 # semantic search
 @router.get("/semantic", response_model=List[SemanticSearchResult], status_code=200)
+@limiter.limit("30/minute")
 async def semantic_search(
+    request: Request,
     q: str = Query(..., min_length=1, max_length=500),
     limit: int = Query(default=10, ge=1, le=50),
     db: Session = Depends(get_db),
@@ -80,7 +85,9 @@ async def semantic_search(
 
 # ask a question
 @router.post("/ask", response_model=AskResponse, status_code=200)
+@limiter.limit("20/minute")
 async def ask(
+    request: Request,
     body: AskRequest,
     top_k: int = Query(default=5, ge=1, le=20),
     db: Session = Depends(get_db),
@@ -102,7 +109,9 @@ async def ask(
 
 # update note
 @router.put("/{note_id}", response_model=NoteResponse, status_code=200)
+@limiter.limit("60/minute")
 async def update_note(
+    request: Request,
     note_id: str,
     note: NoteCreate,
     db: Session = Depends(get_db),
@@ -159,7 +168,9 @@ async def delete_note(
 
 # summarize a note
 @router.post("/{note_id}/summarize", response_model=SummarizeResponse, status_code=200)
+@limiter.limit("20/minute")
 async def summarize(
+    request: Request,
     note_id: str,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
@@ -173,7 +184,9 @@ async def summarize(
 
 # create tags automatically
 @router.post("/{note_id}/autotags", response_model=AutoTagsResponse, status_code=200)
+@limiter.limit("20/minute")
 async def autotags(
+    request: Request,
     note_id: str,
     db: Session = Depends(get_db),
     user_id: str = Depends(get_current_user_id),
@@ -186,7 +199,9 @@ async def autotags(
 
 
 @router.post("/{note_id}/share", response_model=NotePermissionResponse, status_code=201)
+@limiter.limit("30/minute")
 async def share_note(
+    request: Request,
     note_id: str,
     body: ShareNoteRequest,
     db: Session = Depends(get_db),

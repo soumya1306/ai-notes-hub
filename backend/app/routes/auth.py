@@ -13,6 +13,7 @@ from app.core.auth import (
     create_refresh_token,
     verify_token,
 )
+from app.core.limiter import limiter
 
 from authlib.integrations.starlette_client import OAuth, OAuthError
 from starlette.requests import Request
@@ -21,7 +22,8 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 
 @router.post("/register", status_code=201)
-def register(payload: UserCreate, db: Session = Depends(get_db)):
+@limiter.limit("5/minute")
+def register(request: Request, payload: UserCreate, db: Session = Depends(get_db)):
 
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -35,7 +37,8 @@ def register(payload: UserCreate, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=TokenResponse, status_code=200)
-def login(payload: UserLogin, db: Session = Depends(get_db)):
+@limiter.limit("10/minute")
+def login(request: Request, payload: UserLogin, db: Session = Depends(get_db)):
 
     user = db.query(User).filter(User.email == payload.email).first()
 
@@ -51,7 +54,10 @@ def login(payload: UserLogin, db: Session = Depends(get_db)):
 
 
 @router.post("/refresh", response_model=TokenResponse, status_code=200)
-def refresh_token(payload: RefreshRequest, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def refresh_token(
+    request: Request, payload: RefreshRequest, db: Session = Depends(get_db)
+):
 
     user_id = verify_token(payload.refresh_token, "refresh")
 

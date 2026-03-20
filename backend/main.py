@@ -1,13 +1,19 @@
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 from dotenv import load_dotenv
 from app.routes import notes, auth, attachments, ws, users
 
 from alembic.config import Config as AlembicConfig
 from alembic import command as alembic_command
+
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from app.core.limiter import limiter
+from app.middleware.security import SecurityHeadersMiddleware
 
 load_dotenv()
 
@@ -16,6 +22,21 @@ _alembic_cfg = AlembicConfig("alembic.ini")
 alembic_command.upgrade(_alembic_cfg, "head")
 
 app = FastAPI(title="AI Notes Hub", version="5.0.0")
+
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded) -> JSONResponse:
+    retry_after = exc.headers.get("Retry-After", 60) if exc.headers else 60
+    return JSONResponse(
+        status_code=429,
+        content={"detail": f"Rate limit exceeded: {exc.detail}"},
+        headers={"Retry-After": str(retry_after)},
+    )
+
+
+app.add_middleware(SecurityHeadersMiddleware)
 
 app.add_middleware(
     SessionMiddleware, secret_key=os.getenv("SECRET_KEY", "your_secret_key_here")

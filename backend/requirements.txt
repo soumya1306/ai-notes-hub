@@ -33,3 +33,7 @@ beautifulsoup4>=4.14.0
 
 #cloudinary for attachments
 cloudinary>=1.41.0
+
+#Rate limiting
+slowapi>=0.1.9
+limits>=3.13.0
