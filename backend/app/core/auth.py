@@ -6,11 +6,12 @@ from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 import os
 
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
+SECRET_KEY = os.getenv("SECRET_KEY", "")
+if SECRET_KEY == "":
     raise RuntimeError("SECRET_KEY environment variable is required and must be set")
 if len(SECRET_KEY.encode()) < 32:
     raise RuntimeError("SECRET_KEY must be at least 32 bytes long (RFC 7518 §3.2)")
+
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 15
 REFRESH_TOKEN_EXPIRE_DAYS = 7

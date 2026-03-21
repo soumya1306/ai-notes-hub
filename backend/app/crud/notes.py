@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import func
+from sqlalchemy import Row, func
 from pgvector.sqlalchemy import Vector
 from app.models.models import Note, NotePermission, User
 from app.schemas.schemas import NoteCreate, NotePermissionResponse
@@ -42,7 +42,9 @@ def _is_owner(db: Session, note_id: str, user_id: str) -> bool:
 #  CRUD  #
 
 
-def get_notes(db: Session, user_id: str, search: str | None = None) -> list[tuple[Note, str]]:
+def get_notes(
+    db: Session, user_id: str, search: str | None = None
+) -> list[Row[tuple[Note, str]]]:
     query = (
         db.query(Note, NotePermission.role)
         .join(NotePermission, NotePermission.note_id == Note.id)
@@ -219,7 +221,9 @@ def revoke_share(db: Session, note_id: str, owner_id: str, target_user_id: str) 
     return True
 
 
-def get_note_collaborators(db: Session, note_id: str, user_id: str) -> list[NotePermissionResponse] | None:
+def get_note_collaborators(
+    db: Session, note_id: str, user_id: str
+) -> list[NotePermissionResponse] | None:
     """
     Returns all collaborators for a note. Requires access.
     """

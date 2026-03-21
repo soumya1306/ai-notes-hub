@@ -2,12 +2,14 @@
 Rollback pattern: Each test gets a real DB connection wrapped in a transaction that rolls back after the test — zero cleanup code needed, zero data leakage between tests.
 """
 
+from unittest.mock import AsyncMock, patch
+
 import pytest
 from typing import Generator, AsyncGenerator
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker, Session
 from httpx import AsyncClient, ASGITransport
-
+from app.core.limiter import limiter
 from main import app
 from app.models.models import Base
 from app.database import get_db
@@ -15,9 +17,15 @@ from app.database import get_db
 import os
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
+FAKE_EMBEDDING = [0.1] * 768
 
 test_engine = create_engine(TEST_DATABASE_URL)
 TestSessionLocal = sessionmaker(bind=test_engine, autoflush=False, autocommit=False)
+
+
+@pytest.fixture(autouse=True)
+def disable_rate_limiting():
+    limiter.reset()
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -59,10 +67,18 @@ def override_db(db_session: Session):
     app.dependency_overrides.clear()
 
 
+@pytest.fixture(autouse=True)
+def mock_embed():
+    with patch(
+        "app.services.ai.embed_text", new=AsyncMock(return_value=FAKE_EMBEDDING)
+    ):
+        yield
+
+
 @pytest.fixture()
 async def client(override_db) -> AsyncGenerator[AsyncClient, None]:
     """
-    For Async functions yield returns an async generator, it doesnt havea a return type so only 2 parameters, so the return type is AsyncGenerator[YieldType, SendType]
+    For Async functions yield returns an async generator, it doesnt havea a return type so only 2 parameters, so the return type is AsyncGenerator[YieldType, SendType]. Here we create an AsyncClient that is used to make requests to our FastAPI app. The ASGITransport allows us to test the app without actually running a server, it directly calls the app. The base_url is required by httpx but since we are using ASGITransport it doesnt matter what we set it to.
     """
 
     async with AsyncClient(
@@ -72,7 +88,7 @@ async def client(override_db) -> AsyncGenerator[AsyncClient, None]:
 
 
 @pytest.fixture()
-async def auth_headers(client):
+async def auth_token(client):
     await client.post(
         "auth/register",
         json={"email": "testuser@example.com", "password": "TestPass123!"},

@@ -1,5 +1,7 @@
+from fastapi import HTTPException
 import os
 from google import genai
+from google.genai.errors import ClientError
 from bs4 import BeautifulSoup
 
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
@@ -24,9 +26,20 @@ async def summarize_note(content: str) -> str:
     """
     plain = _strip_html(content)
     prompt = f"Summarize the following note in 2-3 concise sentences. Return only the summary, no preamble \n\n {plain}"
-    response = await client.aio.models.generate_content(model=MODEL, contents=prompt)
-    if response.text:
-        return response.text.strip()
+    try:
+        response = await client.aio.models.generate_content(
+            model=MODEL, contents=prompt
+        )
+        if response.text:
+            return response.text.strip()
+
+    except ClientError as e:
+        if e.code == 429:
+            raise HTTPException(
+                status_code=429,
+                detail="Rate limit exceeded for Gemini API. Please try again later.",
+            )
+        raise
 
     return "Cannot summarize, Error Occured, Please try again!!!"
 
