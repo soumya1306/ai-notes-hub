@@ -21,7 +21,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 12: File Attachments (Cloudinary — signed server-side uploads, images/PDF/video per note)
 - ✅ Phase 13: Real-time Collaboration (WebSockets, note permissions, user search, share panel)
 - ✅ Phase 14: Rate Limiting + Security Headers (slowapi, Retry-After, SecurityHeadersMiddleware)
-- 📅 Phase 15: Unit + Integration Tests
+- ✅ Phase 15: Unit + Integration Tests (pytest, pytest-asyncio, httpx, rollback isolation, mocking)
 - 📅 Phase 16: Docker + GitHub Actions CI/CD
 - 📅 Phase 17: Sentry + Performance Monitoring
 - 📅 Phase 18: System Design Doc (ARCHITECTURE.md)
@@ -30,19 +30,20 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 
 ## Tech Stack
 
-| Layer      | Tech                                                                                        |
-|------------|---------------------------------------------------------------------------------------------| 
-| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons             |
-| Backend    | FastAPI, Pydantic v2, Python 3.14                                                           |
-| Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector, Alembic                                           |
-| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                    |
-| AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A              |
-| Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                                  |
-| Real-time  | WebSockets (FastAPI native), per-note rooms, per-user notification channel                  |
-| Security   | slowapi rate limiting, SecurityHeadersMiddleware, HSTS, CSP, X-Frame-Options               |
-| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                     |
-| Monitoring | Sentry (upcoming)                                                                           |
-| Deployment | Vercel (frontend), Railway (backend)                                                        |
+| Layer      | Tech                                                                                    |
+|------------|-----------------------------------------------------------------------------------------|
+| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons         |
+| Backend    | FastAPI, Pydantic v2, Python 3.14                                                       |
+| Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector, Alembic                                       |
+| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                |
+| AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A          |
+| Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                              |
+| Real-time  | WebSockets (FastAPI native), per-note rooms, per-user notification channel              |
+| Security   | slowapi rate limiting, SecurityHeadersMiddleware, HSTS, CSP, X-Frame-Options           |
+| Testing    | pytest, pytest-asyncio, httpx AsyncClient, unittest.mock, rollback isolation           |
+| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                 |
+| Monitoring | Sentry (upcoming)                                                                       |
+| Deployment | Vercel (frontend), Railway (backend)                                                    |
 
 ## Features
 
@@ -83,11 +84,16 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Rate limiting — slowapi in-memory token bucket on all auth + AI + write endpoints
 - Retry-After header — 429 responses include exact wait time; frontend surfaces friendly message
 - Security headers — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy on every response
+- Unit tests — AI service mocked at Gemini client level; covers summarize, autotag, embed, ask, 429 handling
+- Integration tests — Full HTTP roundtrip tests for auth, notes CRUD, attachments, semantic search, RAG Q&A
+- Rollback isolation — Each test wrapped in a transaction that rolls back; zero data leakage between tests
+- Rate limiter reset — limiter counters cleared before every test to prevent cross-test 429 interference
+- Cloudinary mocked — `cloudinary.uploader.upload/destroy` patched at SDK level; real business logic tested
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Unit + integration tests
 - Docker + GitHub Actions CI/CD
+- Sentry error monitoring
 
 ## Project Structure
 
@@ -141,6 +147,14 @@ ai-notes-hub/
     │   │   ├── ai.py                # summarize_note() + generate_tags() + embed_text() + ask_question()
     │   │   ├── cloudinary.py        # upload_file_to_cloudinary() + delete_file_from_cloudinary()
     │   │   └── ws.py                # ConnectionManager — rooms, connect, disconnect, broadcast, close_room
+    │   ├── tests/
+    │   │   ├── conftest.py          # Shared fixtures — test DB engine, rollback session, AsyncClient, auth_token
+    │   │   ├── unit/
+    │   │   │   └── test_ai_service.py       # Unit tests for summarize, autotag, embed, ask, 429 handling
+    │   │   └── integration/
+    │   │       ├── test_auth_routes.py      # Register, login, refresh, logout flows
+    │   │       ├── test_notes_routes.py     # Notes CRUD, summarize, autotags, semantic search, RAG Q&A, sharing
+    │   │       └── test_attachment_routes.py# Upload, list, delete attachments with Cloudinary mocked
     │   └── database.py              # SQLAlchemy engine + session
     ├── main.py                      # FastAPI app + middlewares + limiter state + 429 handler + all routers
     ├── requirements.txt
@@ -152,6 +166,7 @@ ai-notes-hub/
 **Backend `.env`**
 ```
 DATABASE_URL=postgresql://user:password@localhost:5432/ai_notes_hub
+TEST_DATABASE_URL=postgresql://user:password@localhost:5432/ai_notes_hub_test
 SECRET_KEY=your-super-secret-key-change-in-production
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
@@ -181,8 +196,6 @@ That's it. Alembic runs all migrations in order and creates every table — `use
 > `pgvector` must be installed on your system first (`brew install pgvector` on Mac).
 
 ### Creating New Migrations
-
-Any future schema change should be done via Alembic:
 
 ```bash
 # auto-generate a migration from model changes
@@ -219,18 +232,35 @@ npm install
 npm run dev
 ```
 
+## Running Tests
+
+```bash
+cd backend
+pytest app/tests/ -v
+```
+
+Tests use a separate in-memory transaction per test that rolls back automatically — no data ever touches your real database. Rate limiter counters are reset before each test to prevent 429 interference.
+
+```bash
+# run only unit tests
+pytest app/tests/unit/ -v
+
+# run only integration tests
+pytest app/tests/integration/ -v
+```
+
 ## API Endpoints
 
 ### Authentication
 
-| Method | Endpoint              | Description                          | Rate Limit  |
-|--------|-----------------------|--------------------------------------|-------------|
-| POST   | /auth/register        | Create new user account              | 5/min       |
-| POST   | /auth/login           | Login and receive tokens             | 10/min      |
-| POST   | /auth/refresh         | Get new access + refresh tokens      | 20/min      |
-| POST   | /auth/logout          | Revoke refresh token server-side     | —           |
-| GET    | /auth/google/login    | Redirect to Google OAuth consent     | —           |
-| GET    | /auth/google/callback | Handle Google redirect, issue tokens | —           |
+| Method | Endpoint              | Description                          | Rate Limit |
+|--------|-----------------------|--------------------------------------|------------|
+| POST   | /auth/register        | Create new user account              | 5/min      |
+| POST   | /auth/login           | Login and receive tokens             | 10/min     |
+| POST   | /auth/refresh         | Get new access + refresh tokens      | 20/min     |
+| POST   | /auth/logout          | Revoke refresh token server-side     | —          |
+| GET    | /auth/google/login    | Redirect to Google OAuth consent     | —          |
+| GET    | /auth/google/callback | Handle Google redirect, issue tokens | —          |
 
 ### Notes — requires Bearer token
 
