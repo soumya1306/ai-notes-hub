@@ -4,6 +4,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-green)](https://ai-notes-hub-omega.vercel.app/)
 [![GitHub](https://img.shields.io/badge/GitHub-Repo-blue)](https://github.com/soumya1306/ai-notes-hub)
+[![CI](https://github.com/soumya1306/ai-notes-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/soumya1306/ai-notes-hub/actions/workflows/ci.yml)
 
 ## Current Status
 
@@ -22,7 +23,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 13: Real-time Collaboration (WebSockets, note permissions, user search, share panel)
 - ✅ Phase 14: Rate Limiting + Security Headers (slowapi, Retry-After, SecurityHeadersMiddleware)
 - ✅ Phase 15: Unit + Integration Tests (pytest, pytest-asyncio, httpx, rollback isolation, mocking)
-- 📅 Phase 16: Docker + GitHub Actions CI/CD
+- ✅ Phase 16: Docker + GitHub Actions CI/CD (Dockerfile, docker-compose, pytest in CI, auto-deploy)
 - 📅 Phase 17: Sentry + Performance Monitoring
 - 📅 Phase 18: System Design Doc (ARCHITECTURE.md)
 - 📅 Phase 19: Full Production Deploy
@@ -34,14 +35,14 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 |------------|-----------------------------------------------------------------------------------------|
 | Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons         |
 | Backend    | FastAPI, Pydantic v2, Python 3.14                                                       |
-| Database   | PostgreSQL 18, SQLAlchemy 2.0, pgvector, Alembic                                       |
+| Database   | PostgreSQL 17, SQLAlchemy 2.0, pgvector, Alembic                                       |
 | Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                |
 | AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A          |
 | Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                              |
 | Real-time  | WebSockets (FastAPI native), per-note rooms, per-user notification channel              |
 | Security   | slowapi rate limiting, SecurityHeadersMiddleware, HSTS, CSP, X-Frame-Options           |
 | Testing    | pytest, pytest-asyncio, httpx AsyncClient, unittest.mock, rollback isolation           |
-| DevOps     | Docker, GitHub Actions CI/CD (upcoming)                                                 |
+| DevOps     | Docker, docker-compose, GitHub Actions CI                                               |
 | Monitoring | Sentry (upcoming)                                                                       |
 | Deployment | Vercel (frontend), Railway (backend)                                                    |
 
@@ -89,16 +90,25 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Rollback isolation — Each test wrapped in a transaction that rolls back; zero data leakage between tests
 - Rate limiter reset — limiter counters cleared before every test to prevent cross-test 429 interference
 - Cloudinary mocked — `cloudinary.uploader.upload/destroy` patched at SDK level; real business logic tested
+- Dockerized backend — Multi-stage Dockerfile, docker-compose with pgvector/pg17 + healthcheck
+- GitHub Actions CI — Runs full pytest suite on every push/PR with Postgres service container
+- Auto-deploy — Railway deploys backend and Vercel deploys frontend on every push to main
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Docker + GitHub Actions CI/CD
 - Sentry error monitoring
+- System design documentation
 
 ## Project Structure
 
 ```
 ai-notes-hub/
+├── .github/
+│   └── workflows/
+│       └── ci.yml               # GitHub Actions — pytest on push/PR
+├── docker-compose.yml           # Local dev — backend + pgvector/pg17 DB
+├── railway.json                 # Railway deploy config — points to backend/Dockerfile
+├── vercel.json                  # Vercel frontend deploy config
 ├── frontend/
 │   └── src/
 │       ├── api/
@@ -119,9 +129,11 @@ ai-notes-hub/
 │       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle + QAPanel
 │       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
 └── backend/
+    ├── Dockerfile                   # Python 3.14-slim — installs deps, runs uvicorn
+    ├── .dockerignore                # Excludes __pycache__, .env, tests from image
     ├── alembic/                     # Alembic migration environment
     │   ├── versions/                # Migration scripts (one per schema change)
-    │   └── env.py                   # Alembic config — reads DATABASE_URL from .env
+    │   └── env.py                   # Alembic config — reads DATABASE_URL, swaps asyncpg→psycopg2
     ├── alembic.ini                  # Alembic project config
     ├── app/
     │   ├── models/
@@ -155,18 +167,18 @@ ai-notes-hub/
     │   │       ├── test_auth_routes.py      # Register, login, refresh, logout flows
     │   │       ├── test_notes_routes.py     # Notes CRUD, summarize, autotags, semantic search, RAG Q&A, sharing
     │   │       └── test_attachment_routes.py# Upload, list, delete attachments with Cloudinary mocked
-    │   └── database.py              # SQLAlchemy engine + session
-    ├── main.py                      # FastAPI app + middlewares + limiter state + 429 handler + all routers
+    │   └── database.py              # SQLAlchemy async engine + session
+    ├── main.py                      # FastAPI app + middlewares + limiter + alembic auto-migrate on startup
     ├── requirements.txt
     └── .env
+
 ```
 
 ## Environment Setup
 
 **Backend `.env`**
 ```
-DATABASE_URL=postgresql://user:password@localhost:5432/ai_notes_hub
-TEST_DATABASE_URL=postgresql://user:password@localhost:5432/ai_notes_hub_test
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/ai_notes_hub
 SECRET_KEY=your-super-secret-key-change-in-production
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
@@ -182,38 +194,38 @@ CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 VITE_API_BASE_URL=http://localhost:8000
 ```
 
-## Database Setup
+## Run Locally with Docker (Recommended)
 
-Schema is fully managed with **Alembic**. To create all tables from scratch:
-
-```bash
-cd backend
-alembic upgrade head
-```
-
-That's it. Alembic runs all migrations in order and creates every table — `users`, `notes`, `attachments`, `note_permissions` — along with the HNSW index and all backfills.
-
-> `pgvector` must be installed on your system first (`brew install pgvector` on Mac).
-
-### Creating New Migrations
+**Prerequisites**
+- Docker Desktop
 
 ```bash
-# auto-generate a migration from model changes
-alembic revision --autogenerate -m "describe your change"
+# 1. Clone the repo
+git clone https://github.com/soumya1306/ai-notes-hub.git
+cd ai-notes-hub
 
-# apply it
-alembic upgrade head
+# 2. Add your backend .env file
+cp backend/.env.example backend/.env
+# Fill in your keys
 
-# roll back one step if needed
-alembic downgrade -1
+# 3. Start DB only first (to generate migrations if needed)
+docker compose up db -d
+
+# 4. Generate initial migration (first time only)
+docker compose run --rm backend alembic revision --autogenerate -m "initial schema"
+
+# 5. Start everything
+docker compose up --build
 ```
 
-## Run Locally
+API available at `http://localhost:8000/docs` ✅
+
+## Run Locally without Docker
 
 **Prerequisites**
 - Python 3.14+
 - Node.js 18+
-- PostgreSQL 18+ with pgvector extension installed
+- PostgreSQL 17+ with pgvector extension
 
 **Backend**
 ```bash
@@ -221,7 +233,6 @@ cd backend
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head
 uvicorn main:app --reload
 ```
 
@@ -232,22 +243,49 @@ npm install
 npm run dev
 ```
 
+## Database Migrations
+
+Schema is managed with **Alembic**. Migrations run automatically on app startup via `main.py`.
+
+```bash
+# Generate a new migration after changing models.py
+docker compose run --rm backend alembic revision --autogenerate -m "describe your change"
+
+# Commit the generated file — it applies automatically on next deploy
+git add backend/alembic/versions/
+git commit -m "feat: add migration for ..."
+
+# Roll back one step if needed
+docker compose run --rm backend alembic downgrade -1
+```
+
 ## Running Tests
 
 ```bash
 cd backend
 pytest app/tests/ -v
-```
 
-Tests use a separate in-memory transaction per test that rolls back automatically — no data ever touches your real database. Rate limiter counters are reset before each test to prevent 429 interference.
-
-```bash
 # run only unit tests
 pytest app/tests/unit/ -v
 
 # run only integration tests
 pytest app/tests/integration/ -v
 ```
+
+Tests use rollback isolation — each test wraps in a transaction that rolls back automatically. No data ever touches your real database.
+
+## CI/CD Pipeline
+
+```
+git push main
+      ↓
+GitHub Actions  →  runs pytest with Postgres service container
+      ↓ (simultaneously)
+Railway         →  builds Dockerfile → deploys backend API
+Vercel          →  builds frontend   → deploys UI
+```
+
+GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 
 ## API Endpoints
 
