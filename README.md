@@ -26,7 +26,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 16: Docker + GitHub Actions CI/CD (Dockerfile, docker-compose, pytest in CI, auto-deploy)
 - ✅ Phase 17: Sentry + Performance Monitoring (sentry-sdk[fastapi], @sentry/react, ErrorBoundary, tracing, session replay)
 - ✅ Phase 18: System Design Doc (ARCHITECTURE.md — layered arch, auth flow, AI pipeline, RAG, WebSockets, security, trade-offs)
-- 📅 Phase 19: Full Production Deploy
+- ✅ Phase 19: Full Production Deploy (Railway backend + Vercel frontend, Alembic auto-migrations, Railway root directory config)
 - 📅 Phase 20: Polish + Portfolio README
 
 ## Tech Stack
@@ -44,7 +44,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 | Testing    | pytest, pytest-asyncio, httpx AsyncClient, unittest.mock, rollback isolation           |
 | DevOps     | Docker, docker-compose, GitHub Actions CI                                               |
 | Monitoring | Sentry (error tracking, performance tracing, session replay)                            |
-| Deployment | Vercel (frontend), Railway (backend)                                                    |
+| Deployment | Vercel (frontend), Railway (backend + PostgreSQL)                                       |
 
 ## Features
 
@@ -97,10 +97,11 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Sentry frontend — @sentry/react with browserTracingIntegration, session replay, ErrorBoundary
 - Environment-aware — Sentry disabled in CI (empty DSN), development vs production environments tagged
 - System design documented — ARCHITECTURE.md covers layered arch, auth flow, AI/RAG pipeline, WebSockets, security design, and trade-offs
+- Production deployed — Railway (backend + PostgreSQL), Vercel (frontend), Alembic migrations run automatically on startup
+- railway.json scoped to backend/ — Root directory set to `backend/` so Railway builds from the correct context
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Full production hardening (Phase 19)
 - Portfolio polish (Phase 20)
 
 ## Project Structure
@@ -113,7 +114,6 @@ ai-notes-hub/
 │   └── workflows/
 │       └── ci.yml               # GitHub Actions — pytest on push/PR
 ├── docker-compose.yml           # Local dev — backend + pgvector/pg17 DB
-├── railway.json                 # Railway deploy config — points to backend/Dockerfile
 ├── vercel.json                  # Vercel frontend deploy config
 ├── frontend/
 │   ├── .env.example             # Template — copy to .env.local and fill in values
@@ -137,6 +137,7 @@ ai-notes-hub/
 │       └── main.jsx                 # BrowserRouter + AuthProvider + Sentry.init + ErrorBoundary
 └── backend/
     ├── Dockerfile                   # Python 3.14-slim — installs deps, runs uvicorn
+    ├── railway.json                 # Railway deploy config — root directory set to backend/
     ├── .dockerignore                # Excludes __pycache__, .env, tests from image
     ├── alembic/                     # Alembic migration environment
     │   ├── versions/                # Migration scripts (one per schema change)
@@ -174,7 +175,7 @@ ai-notes-hub/
     │   │       ├── test_auth_routes.py      # Register, login, refresh, logout flows
     │   │       ├── test_notes_routes.py     # Notes CRUD, summarize, autotags, semantic search, RAG Q&A, sharing
     │   │       └── test_attachment_routes.py# Upload, list, delete attachments with Cloudinary mocked
-    │   └── database.py              # SQLAlchemy async engine + session
+    │   └── database.py              # SQLAlchemy engine + session + Base
     ├── main.py                      # FastAPI app + Sentry init + middlewares + limiter + alembic auto-migrate on startup
     └── requirements.txt
 ```
@@ -183,23 +184,23 @@ ai-notes-hub/
 
 **Backend** — set these in Railway dashboard (production) or a local `.env` file (dev):
 ```
-DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/ai_notes_hub
+DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/ai_notes_hub
 SECRET_KEY=your-super-secret-key-change-in-production
 GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
-FRONTEND_URL=http://localhost:5173
+FRONTEND_URL=https://your-vercel-app.vercel.app
 GEMINI_API_KEY=your-gemini-api-key
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-cloudinary-api-key
 CLOUDINARY_API_SECRET=your-cloudinary-api-secret
 SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/YYYY
-APP_ENV=development
+APP_ENV=production
 ```
 
 **Frontend** — set these in Vercel dashboard (production) or copy `frontend/.env.example` to `frontend/.env.local` (dev):
 ```
-VITE_API_BASE_URL=http://localhost:8000
-VITE_WS_BASE_URL=ws://localhost:8000
+VITE_API_BASE_URL=https://your-railway-backend.up.railway.app
+VITE_WS_BASE_URL=wss://your-railway-backend.up.railway.app
 VITE_SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/ZZZZ
 ```
 
@@ -214,15 +215,10 @@ git clone https://github.com/soumya1306/ai-notes-hub.git
 cd ai-notes-hub
 
 # 2. Add your backend env file
+cp backend/.env.example backend/.env
 # Fill in your keys in backend/.env
 
-# 3. Start DB only first (to generate migrations if needed)
-docker compose up db -d
-
-# 4. Generate initial migration (first time only)
-docker compose run --rm backend alembic revision --autogenerate -m "initial schema"
-
-# 5. Start everything
+# 3. Start everything
 docker compose up --build
 ```
 
@@ -257,15 +253,18 @@ Schema is managed with **Alembic**. Migrations run automatically on app startup 
 
 ```bash
 # Generate a new migration after changing models.py
-docker compose run --rm backend alembic revision --autogenerate -m "describe your change"
+cd backend
+alembic revision --autogenerate -m "describe your change"
 
 # Commit the generated file — it applies automatically on next deploy
-git add backend/alembic/versions/
+git add alembic/versions/
 git commit -m "feat: add migration for ..."
 
 # Roll back one step if needed
-docker compose run --rm backend alembic downgrade -1
+alembic downgrade -1
 ```
+
+> ⚠️ Never delete migration files. Each file is a permanent record of a schema change.
 
 ## Running Tests
 
@@ -284,14 +283,20 @@ Tests use rollback isolation — each test wraps in a transaction that rolls bac
 
 ## CI/CD Pipeline
 
+Deployments are handled automatically by the hosting platforms — GitHub Actions is used exclusively for running the test suite on every push and pull request.
+
 ```
 git push main
       ↓
-GitHub Actions  →  runs pytest with Postgres service container
-      ↓ (simultaneously)
-Railway         →  builds Dockerfile → deploys backend API
-Vercel          →  builds frontend   → deploys UI
+GitHub Actions  →  runs pytest with Postgres service container (CI only — no deploy trigger)
+
+Railway         →  watches main branch → builds backend/Dockerfile → alembic upgrade head → starts uvicorn  (auto-deploy)
+Vercel          →  watches main branch → builds frontend → deploys UI  (auto-deploy)
 ```
+
+- **GitHub Actions** — runs the full pytest suite (unit + integration) against a Postgres service container. Acts as a quality gate; does not trigger or gate deployments.
+- **Railway** — connected directly to the GitHub repo; deploys the backend automatically on every push to `main`. Root directory is scoped to `backend/` via `railway.json`.
+- **Vercel** — connected directly to the GitHub repo; deploys the frontend automatically on every push to `main`.
 
 GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 
@@ -348,7 +353,7 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 ## Security Features
 
 - **bcrypt password hashing** — Salted and hashed, Python 3.14 compatible
-- **JWT access tokens** — 15-minute expiry (HS256)
+- **JWT access tokens** — 15-minute expiry (HS256); refresh tokens expire in 7 days
 - **Refresh token rotation** — New refresh token on every refresh call
 - **Token revocation** — Logout clears refresh token in database
 - **Per-user data isolation** — All queries scoped via permissions table
@@ -402,7 +407,6 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 | user_id    | UUID        | REFERENCES users(id) ON DELETE CASCADE        |
 | role       | VARCHAR(10) | CHECK (role IN ('owner', 'editor', 'viewer')) |
 | created_at | TIMESTAMPTZ | DEFAULT now()                                 |
-|            |             | UNIQUE (note_id, user_id)                     |
 
 ### attachments table
 
