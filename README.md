@@ -24,7 +24,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 14: Rate Limiting + Security Headers (slowapi, Retry-After, SecurityHeadersMiddleware)
 - ✅ Phase 15: Unit + Integration Tests (pytest, pytest-asyncio, httpx, rollback isolation, mocking)
 - ✅ Phase 16: Docker + GitHub Actions CI/CD (Dockerfile, docker-compose, pytest in CI, auto-deploy)
-- 📅 Phase 17: Sentry + Performance Monitoring
+- ✅ Phase 17: Sentry + Performance Monitoring (sentry-sdk[fastapi], @sentry/react, ErrorBoundary, tracing, session replay)
 - 📅 Phase 18: System Design Doc (ARCHITECTURE.md)
 - 📅 Phase 19: Full Production Deploy
 - 📅 Phase 20: Polish + Portfolio README
@@ -43,7 +43,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 | Security   | slowapi rate limiting, SecurityHeadersMiddleware, HSTS, CSP, X-Frame-Options           |
 | Testing    | pytest, pytest-asyncio, httpx AsyncClient, unittest.mock, rollback isolation           |
 | DevOps     | Docker, docker-compose, GitHub Actions CI                                               |
-| Monitoring | Sentry (upcoming)                                                                       |
+| Monitoring | Sentry (error tracking, performance tracing, session replay)                            |
 | Deployment | Vercel (frontend), Railway (backend)                                                    |
 
 ## Features
@@ -93,11 +93,13 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Dockerized backend — Multi-stage Dockerfile, docker-compose with pgvector/pg17 + healthcheck
 - GitHub Actions CI — Runs full pytest suite on every push/PR with Postgres service container
 - Auto-deploy — Railway deploys backend and Vercel deploys frontend on every push to main
+- Sentry backend — sentry-sdk[fastapi] with FastApiIntegration + SqlalchemyIntegration, performance tracing
+- Sentry frontend — @sentry/react with browserTracingIntegration, session replay, ErrorBoundary
+- Environment-aware — Sentry disabled in CI (empty DSN), development vs production environments tagged
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- Sentry error monitoring
-- System design documentation
+- System design documentation (ARCHITECTURE.md)
 
 ## Project Structure
 
@@ -110,6 +112,7 @@ ai-notes-hub/
 ├── railway.json                 # Railway deploy config — points to backend/Dockerfile
 ├── vercel.json                  # Vercel frontend deploy config
 ├── frontend/
+│   ├── .env.example             # Template — copy to .env.local and fill in values
 │   └── src/
 │       ├── api/
 │       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
@@ -127,7 +130,7 @@ ai-notes-hub/
 │       │   ├── NoteAttachments.jsx  # Per-note file upload/delete UI (Cloudinary)
 │       │   └── QAPanel.jsx          # RAG Q&A panel — ask questions, get Gemini answers
 │       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle + QAPanel
-│       └── main.jsx                 # BrowserRouter + AuthProvider wrapper
+│       └── main.jsx                 # BrowserRouter + AuthProvider + Sentry.init + ErrorBoundary
 └── backend/
     ├── Dockerfile                   # Python 3.14-slim — installs deps, runs uvicorn
     ├── .dockerignore                # Excludes __pycache__, .env, tests from image
@@ -168,15 +171,13 @@ ai-notes-hub/
     │   │       ├── test_notes_routes.py     # Notes CRUD, summarize, autotags, semantic search, RAG Q&A, sharing
     │   │       └── test_attachment_routes.py# Upload, list, delete attachments with Cloudinary mocked
     │   └── database.py              # SQLAlchemy async engine + session
-    ├── main.py                      # FastAPI app + middlewares + limiter + alembic auto-migrate on startup
-    ├── requirements.txt
-    └── .env
-
+    ├── main.py                      # FastAPI app + Sentry init + middlewares + limiter + alembic auto-migrate on startup
+    └── requirements.txt
 ```
 
 ## Environment Setup
 
-**Backend `.env`**
+**Backend** — set these in Railway dashboard (production) or a local `.env` file (dev):
 ```
 DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/ai_notes_hub
 SECRET_KEY=your-super-secret-key-change-in-production
@@ -187,11 +188,15 @@ GEMINI_API_KEY=your-gemini-api-key
 CLOUDINARY_CLOUD_NAME=your-cloud-name
 CLOUDINARY_API_KEY=your-cloudinary-api-key
 CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/YYYY
+APP_ENV=development
 ```
 
-**Frontend `.env`**
+**Frontend** — set these in Vercel dashboard (production) or copy `frontend/.env.example` to `frontend/.env.local` (dev):
 ```
 VITE_API_BASE_URL=http://localhost:8000
+VITE_WS_BASE_URL=ws://localhost:8000
+VITE_SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/ZZZZ
 ```
 
 ## Run Locally with Docker (Recommended)
@@ -204,9 +209,8 @@ VITE_API_BASE_URL=http://localhost:8000
 git clone https://github.com/soumya1306/ai-notes-hub.git
 cd ai-notes-hub
 
-# 2. Add your backend .env file
-cp backend/.env.example backend/.env
-# Fill in your keys
+# 2. Add your backend env file
+# Fill in your keys in backend/.env
 
 # 3. Start DB only first (to generate migrations if needed)
 docker compose up db -d
@@ -353,6 +357,13 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 - **Rate limiting** — slowapi token bucket; brute-force protection on auth, cost protection on AI endpoints
 - **Retry-After** — Every 429 response includes exact seconds to wait; frontend surfaces friendly ⏳ message
 - **Security headers** — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection on every response
+
+## Monitoring
+
+- **Sentry backend** — FastApiIntegration + SqlalchemyIntegration; captures unhandled exceptions, slow DB queries, and request traces
+- **Sentry frontend** — browserTracingIntegration captures page loads and navigation; session replay on errors (text/media masked for privacy)
+- **ErrorBoundary** — Wraps entire React app; catches render errors and reports to Sentry with fallback UI
+- **Environment tagging** — Events tagged with `development` / `production`; Sentry disabled in CI via empty DSN
 
 ## Database Schema
 
