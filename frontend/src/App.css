@@ -1,3 +1,83 @@
+
+/* CSS VARIABLES */
+
+:root {
+  --color-indigo-25:    #f8faff;
+  --color-indigo-50:    #eef2ff;
+  --color-indigo-100:   #e0e7ff;
+  --color-indigo-200:   #c7d2fe;
+  --color-indigo-300:   #a5b4fc;
+  --color-indigo-500:   #6366f1;
+  --color-indigo-600:   #4f46e5;
+  --color-indigo-800:   #3730a3;
+
+  --color-violet-25:    #f8f7ff;
+  --color-violet-50:    #f5f3ff;
+  --color-violet-100:   #ede9fe;
+  --color-violet-200:   #e0d4ff;
+  --color-violet-300:   #c4b5fd;
+  --color-violet-500:   #8b5cf6;
+  --color-violet-600:   #7c3aed;
+  --color-violet-700:   #6d28d9;
+  --color-violet-900:   #4c1d95;
+
+  --color-lavender-100: #f0e6ff;
+
+  --color-blue-100:     #dbeafe;
+  --color-blue-200:     #bfdbfe;
+  --color-blue-300:     #93c5fd;
+  --color-blue-700:     #1d4ed8;
+  --color-blue-800:     #1e40af;
+
+  --color-slate-50:     #f8fafc;
+  --color-slate-100:    #f1f5f9;
+  --color-slate-200:    #e2e8f0;
+  --color-slate-400:    #94a3b8;
+  --color-slate-500:    #64748b;
+  --color-slate-600:    #475569;
+  --color-slate-800:    #1e293b;
+
+  --color-gray-100:     #f3f4f6;
+  --color-gray-200:     #e5e7eb;
+  --color-gray-500:     #6b7280;
+  --color-gray-700:     #374151;
+
+  --color-red-100:      #fee2e2;
+  --color-red-200:      #fecaca;
+  --color-red-500:      #ef4444;
+  --color-red-600:      #dc2626;
+
+  --color-green-100:    #dcfce7;
+  --color-green-200:    #bbf7d0;
+  --color-green-800:    #166534;
+
+  --color-emerald-100:  #d1fae5;
+  --color-emerald-900:  #065f46;
+
+  --color-amber-100:    #fef3c7;
+  --color-amber-800:    #92400e;
+
+  --shadow-indigo-sm:   rgba(79, 70, 229, 0.1);
+  --shadow-blue-sm:     rgba(30, 64, 175, 0.1);
+  --shadow-blue-md:     rgba(30, 64, 175, 0.2);
+  --shadow-black-sm:    rgba(0, 0, 0, 0.1);
+  --shadow-black-md:    rgba(0, 0, 0, 0.15);
+  --white-10:           rgba(255, 255, 255, 0.1);
+  --white-20:           rgba(255, 255, 255, 0.2);
+  --white-30:           rgba(255, 255, 255, 0.3);
+  --white-40:           rgba(255, 255, 255, 0.4);
+
+  --gradient-body:      linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary:   linear-gradient(135deg, var(--color-indigo-600), var(--color-violet-600));
+  --gradient-ai:        linear-gradient(135deg, var(--color-lavender-100), var(--color-violet-200));
+  --gradient-ai-hover:  linear-gradient(135deg, var(--color-violet-200), var(--color-violet-300));
+  --gradient-tag:       linear-gradient(135deg, var(--color-blue-100), var(--color-blue-200));
+  --gradient-tag-hover: linear-gradient(135deg, var(--color-blue-200), var(--color-blue-300));
+  --gradient-share:     linear-gradient(135deg, var(--color-indigo-500), var(--color-violet-500));
+}
+
+/* RESET & BASE */
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,10 +91,12 @@ body {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-body);
   min-height: 100vh;
   padding: 20px;
 }
+
+/* AUTH  LoginForm, RegisterForm, OAuthCallback */
 
 .auth-container {
   min-height: 100vh;
@@ -27,7 +109,7 @@ body {
   background: white;
   padding: 40px;
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 20px 40px var(--shadow-black-md);
   width: 100%;
   max-width: 420px;
 }
@@ -35,12 +117,12 @@ body {
 .auth-box h2 {
   font-size: 1.8rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--color-slate-800);
   margin-bottom: 6px;
 }
 
 .auth-sub {
-  color: #64748b;
+  color: var(--color-slate-500);
   font-size: 14px;
   margin-bottom: 30px;
 }
@@ -51,8 +133,8 @@ body {
 }
 
 .auth-error {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-red-100);
+  color: var(--color-red-600);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 14px;
@@ -62,12 +144,12 @@ body {
 .auth-switch {
   text-align: center;
   margin-top: 16px;
-  color: #64748b;
+  color: var(--color-slate-500);
   font-size: 14px;
 }
 
 .auth-switch span {
-  color: #4f46e5;
+  color: var(--color-indigo-600);
   font-weight: 600;
   cursor: pointer;
 }
@@ -80,7 +162,7 @@ body {
   display: flex;
   align-items: center;
   text-align: center;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   margin: 16px 0;
   gap: 10px;
 }
@@ -89,15 +171,15 @@ body {
 .auth-divider::after {
   content: "";
   flex: 1;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-slate-200);
 }
 
 .google-btn {
   width: 100%;
   padding: 13px 16px;
   background: white;
-  color: #1e293b;
-  border: 2px solid #e2e8f0;
+  color: var(--color-slate-800);
+  border: 2px solid var(--color-slate-200);
   border-radius: 12px;
   font-size: 15px;
   font-weight: 600;
@@ -119,16 +201,17 @@ body {
 }
 
 .google-btn:hover {
-  background: #f8faff;
-  border-color: #c7d2fe;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+  background: var(--color-indigo-25);
+  border-color: var(--color-indigo-200);
+  box-shadow: 0 4px 12px var(--shadow-indigo-sm);
   transform: translateY(-1px);
 }
 
+/*  SHELL App.jsx  (container, header, logout) */
 .logout-btn {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--white-20);
   color: white;
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--white-40);
   padding: 8px 18px;
   border-radius: 8px;
   font-size: 14px;
@@ -138,20 +221,20 @@ body {
 }
 
 .logout-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+  background: var(--white-30);
 }
 
 .app-container {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
   background: white;
   border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 20px 40px var(--shadow-black-sm);
   overflow: hidden;
 }
 
 .header {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: var(--gradient-primary);
   color: white;
   padding: 40px 30px;
   text-align: center;
@@ -163,17 +246,18 @@ body {
   margin-bottom: 10px;
 }
 
+/* NOTE FORM NoteForm.jsx */
 .note-form {
   padding: 40px 30px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-slate-50);
+  border-bottom: 1px solid var(--color-slate-200);
 }
 
 .note-input {
   width: 100%;
   min-height: 120px;
   padding: 20px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-slate-200);
   border-radius: 12px;
   font-size: 16px;
   font-family: inherit;
@@ -183,8 +267,8 @@ body {
 
 .note-input:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: var(--color-indigo-600);
+  box-shadow: 0 0 0 3px var(--shadow-indigo-sm);
   transform: translateY(-2px);
 }
 
@@ -192,7 +276,7 @@ body {
   width: 100%;
   margin-top: 20px;
   padding: 16px;
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: var(--gradient-primary);
   color: white;
   border: none;
   border-radius: 12px;
@@ -204,13 +288,15 @@ body {
 
 .add-btn:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 10px 25px var(--shadow-indigo-sm);
 }
 
 .add-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* NOTE LIST & NOTE CARD  ·  NoteList.jsx */
 
 .notes-section {
   padding: 40px 30px;
@@ -226,8 +312,8 @@ body {
   background: white;
   padding: 25px;
   border-radius: 16px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-  border-left: 5px solid #4f46e5;
+  box-shadow: 0 10px 30px var(--shadow-black-sm);
+  border-left: 5px solid var(--color-indigo-600);
   transition: all 0.3s ease;
   position: relative;
   animation: slideInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
@@ -246,7 +332,7 @@ body {
 
 .note-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 2px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 40px var(--shadow-black-md);
 }
 
 .note-content {
@@ -258,7 +344,7 @@ body {
 }
 
 .note-meta {
-  color: #64748b;
+  color: var(--color-slate-500);
   font-size: 13px;
   margin-bottom: 15px;
 }
@@ -268,6 +354,8 @@ body {
   align-items: center;
   gap: 12px;
 }
+
+/* SHARED BUTTONS */
 
 .btn {
   display: flex;
@@ -283,52 +371,55 @@ body {
 }
 
 .btn-edit {
-  background: #dbeafe;
-  color: #1e40af;
+  background: var(--color-blue-100);
+  color: var(--color-blue-800);
 }
 
 .btn-edit:hover {
-  background: #bfdbfe;
+  background: var(--color-blue-200);
 }
 
 .btn-delete {
-  background: #fee2e2;
-  color: #dc2626;
+  background: var(--color-red-100);
+  color: var(--color-red-600);
 }
 
 .btn-delete:hover {
-  background: #fecaca;
+  background: var(--color-red-200);
 }
 
 .btn-save {
-  background: #dcfce7;
-  color: #166534;
+  background: var(--color-green-100);
+  color: var(--color-green-800);
 }
 
 .btn-save:hover {
-  background: #bbf7d0;
-  color: #6b7280;
+  background: var(--color-green-200);
+  color: var(--color-gray-500);
 }
 
 .btn-cancel {
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-gray-100);
+  color: var(--color-gray-500);
 }
 
 .btn-cancel:hover {
-  background: #e5e7eb;
+  background: var(--color-gray-200);
 }
 
+/*  EMPTY STATE */
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #64748b;
+  color: var(--color-slate-500);
 }
 
 .empty-state p {
   font-size: 18px;
   margin-top: 10px;
 }
+
+/* TAGS */
 
 .note-tags {
   display: flex;
@@ -338,18 +429,30 @@ body {
 }
 
 .tag {
-  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
-  color: #1e40af;
+  background: var(--gradient-tag);
+  color: var(--color-blue-800);
   padding: 4px 12px;
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
-  box-shadow: 0 2px 4px rgba(30, 64, 175, 0.1);
+  box-shadow: 0 2px 4px var(--shadow-blue-sm);
 }
 
-/* Custom editor css */
+.tag--clickable {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tag--clickable:hover {
+  background: var(--gradient-tag-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px var(--shadow-blue-md);
+}
+
+/* TIPTAP EDITOR  ·  NoteForm.jsx / NoteCard */
+
 .tiptap-wrapper {
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-slate-200);
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s ease;
@@ -357,8 +460,8 @@ body {
 }
 
 .tiptap-wrapper:focus-within {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: var(--color-indigo-600);
+  box-shadow: 0 0 0 3px var(--shadow-indigo-sm);
   transform: translateY(-2px);
 }
 
@@ -371,8 +474,8 @@ body {
   align-items: center;
   gap: 4px;
   padding: 8px 12px;
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--color-slate-50);
+  border-bottom: 1px solid var(--color-slate-200);
   flex-wrap: wrap;
 }
 
@@ -381,7 +484,7 @@ body {
   border: 1px solid transparent;
   padding: 4px 8px;
   cursor: pointer;
-  color: #475569;
+  color: var(--color-slate-600);
   font-size: 13px;
   border-radius: 6px;
   transition: all 0.15s ease;
@@ -390,20 +493,20 @@ body {
 }
 
 .toolbar-btn:hover {
-  background: #e2e8f0;
-  color: #1e293b;
+  background: var(--color-slate-200);
+  color: var(--color-slate-800);
 }
 
 .toolbar-btn.is-active {
-  background: #dbeafe;
-  color: #1d4ed8;
-  border-color: #bfdbfe;
+  background: var(--color-blue-100);
+  color: var(--color-blue-700);
+  border-color: var(--color-blue-200);
 }
 
 .toolbar-divider {
   width: 1px;
   height: 20px;
-  background: #e2e8f0;
+  background: var(--color-slate-200);
   margin: 0 4px;
 }
 
@@ -415,7 +518,7 @@ body {
   font-family: inherit;
   line-height: 1.6;
   outline: none;
-  color: #1e293b;
+  color: var(--color-slate-800);
 }
 
 .tiptap-editor p {
@@ -430,7 +533,7 @@ body {
   font-size: 1.2rem;
   font-weight: 700;
   margin: 0 0 8px 0;
-  color: #1e293b;
+  color: var(--color-slate-800);
 }
 
 .tiptap-editor ul,
@@ -443,17 +546,17 @@ body {
   margin-bottom: 2px;
 }
 
-.tipatap-editor code {
-  background: #f1f5f9;
+.tiptap-editor code {
+  background: var(--color-slate-100);
   padding: 2px 5px;
   border-radius: 4px;
   font-family: "Courier New", monospace;
   font-size: 13px;
 }
 
-.tipatap-editor pre {
-  background: #1e293b;
-  color: #e2e8f0;
+.tiptap-editor pre {
+  background: var(--color-slate-800);
+  color: var(--color-slate-200);
   padding: 12px 16px;
   border-radius: 8px;
   font-size: 13px;
@@ -468,10 +571,10 @@ body {
   font-size: inherit;
 }
 
-.tipatap-editor blockquote {
-  border-left: 3px solid #4f46e5;
+.tiptap-editor blockquote {
+  border-left: 3px solid var(--color-indigo-600);
   padding-left: 12px;
-  color: #64748b;
+  color: var(--color-slate-500);
   font-style: italic;
   margin: 0 0 8px 0;
 }
@@ -501,14 +604,14 @@ body {
   margin-bottom: 6px;
 }
 .tiptap-output code {
-  background: #f1f5f9;
+  background: var(--color-slate-100);
   padding: 2px 5px;
   border-radius: 4px;
   font-size: 12px;
 }
 .tiptap-output pre {
-  background: #1e293b;
-  color: #e2e8f0;
+  background: var(--color-slate-800);
+  color: var(--color-slate-200);
   padding: 10px 14px;
   border-radius: 8px;
   font-size: 12px;
@@ -520,9 +623,9 @@ body {
   padding: 0;
 }
 .tiptap-output blockquote {
-  border-left: 3px solid #4f46e5;
+  border-left: 3px solid var(--color-indigo-600);
   padding-left: 10px;
-  color: #64748b;
+  color: var(--color-slate-500);
   font-style: italic;
   margin-bottom: 6px;
 }
@@ -536,13 +639,15 @@ body {
   text-decoration: line-through;
 }
 
+/* AI FEATURES NoteCard QAPanel */
+
 .btn-ai {
-  background: linear-gradient(135deg, #f0e6ff, #e0d4ff);
-  color: #6d28d9;
+  background: var(--gradient-ai);
+  color: var(--color-violet-700);
 }
 
 .btn-ai:hover:not(:disabled) {
-  background: linear-gradient(135deg, #e0d4ff, #c4b5fd);
+  background: var(--gradient-ai-hover);
 }
 
 .btn-ai:disabled {
@@ -550,15 +655,14 @@ body {
   cursor: not-allowed;
 }
 
-/* 🆕 ADDED: Summary box */
 .note-summary {
-  background: #f5f3ff;
-  border-left: 3px solid #7c3aed;
+  background: var(--color-violet-50);
+  border-left: 3px solid var(--color-violet-600);
   border-radius: 8px;
   padding: 10px 14px;
   margin-bottom: 12px;
   font-size: 14px;
-  color: #4c1d95;
+  color: var(--color-violet-900);
   line-height: 1.5;
 }
 
@@ -569,10 +673,10 @@ body {
   letter-spacing: 0.05em;
   display: block;
   margin-bottom: 4px;
-  color: #7c3aed;
+  color: var(--color-violet-600);
 }
 
-/* Search bar elements */
+/* SEARCH BAR NoteList.jsx */
 
 .search-bar-wrapper {
   position: relative;
@@ -582,19 +686,19 @@ body {
 .search-input {
   width: 100%;
   padding: 12px 40px 12px 16px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-slate-200);
   border-radius: 12px;
   font-size: 15px;
   font-family: inherit;
   transition: all 0.3s ease;
-  color: #1e293b;
-  background: #f8fafc;
+  color: var(--color-slate-800);
+  background: var(--color-slate-50);
 }
 
 .search-input:focus {
   outline: none;
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+  border-color: var(--color-indigo-600);
+  box-shadow: 0 0 0 3px var(--shadow-indigo-sm);
   background: white;
 }
 
@@ -605,7 +709,7 @@ body {
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   cursor: pointer;
   font-size: 14px;
   padding: 4px;
@@ -613,18 +717,7 @@ body {
 }
 
 .search-clear:hover {
-  color: #475569;
-}
-
-.tag--clickable {
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.tag--clickable:hover {
-  background: linear-gradient(135deg, #bfdbfe, #93c5fd);
-  transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(30, 64, 175, 0.2);
+  color: var(--color-slate-600);
 }
 
 .search-mode-toggle {
@@ -637,10 +730,10 @@ body {
 
 .mode-btn {
   padding: 6px 16px;
-  border: 2px solid #e2e8f0;
+  border: 2px solid var(--color-slate-200);
   border-radius: 20px;
   background: white;
-  color: #64748b;
+  color: var(--color-slate-500);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -648,12 +741,12 @@ body {
 }
 
 .mode-btn:hover {
-  border-color: #a5b4fc;
-  color: #4f46e5;
+  border-color: var(--color-indigo-300);
+  color: var(--color-indigo-600);
 }
 
 .mode-btn--active {
-  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  background: var(--gradient-primary);
   border-color: transparent;
   color: white;
 }
@@ -679,20 +772,21 @@ body {
   flex-shrink: 0;
 }
 
-/*QA Panel*/
+/* QA PANEL QAPanel.jsx */
+
 .qa-panel {
   margin: 0 30px 24px;
   padding: 20px;
   border-radius: 16px;
-  background: #f5f3ff;
-  border: 2px solid #e0d4ff
+  background: var(--color-violet-50);
+  border: 2px solid var(--color-violet-200)
 }
 
 .qa-title {
   margin: 0 0 12px;
   font-size: 1rem;
   font-weight: 600;
-  color: #4c1d95
+  color: var(--color-violet-900)
 }
 
 .qa-input-row {
@@ -710,17 +804,18 @@ body {
   padding: 12px 14px;
   border-radius: 8px;
   background: white;
-  border-left: 3px solid #7c3aed;
+  border-left: 3px solid var(--color-violet-600);
   font-size: 14px;
-  color: #1e293b;
+  color: var(--color-slate-800);
   line-height: 1.6;
 }
 
-/* ── Note Attachments */
+/* NOTE ATTACHMENTS NoteAttachments.jsx */
+
 .note-attachments {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid var(--color-slate-200);
 }
 
 .attachments-header {
@@ -731,14 +826,14 @@ body {
 }
 
 .attachments-icon {
-  color: #64748b;
+  color: var(--color-slate-500);
   flex-shrink: 0;
 }
 
 .attachments-label {
   font-size: 0.78rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-slate-500);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   flex: 1;
@@ -750,16 +845,16 @@ body {
   gap: 5px;
   font-size: 0.78rem;
   padding: 4px 10px;
-  background: #f5f3ff;
-  color: #4f46e5;
-  border: 1px solid #c4b5fd;
+  background: var(--color-violet-50);
+  color: var(--color-indigo-600);
+  border: 1px solid var(--color-violet-300);
   border-radius: 6px;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .btn-attach:hover:not(:disabled) {
-  background: #ede9fe;
+  background: var(--color-violet-100);
 }
 
 .btn-attach:disabled {
@@ -769,7 +864,7 @@ body {
 
 .attachments-error {
   font-size: 0.8rem;
-  color: #ef4444;
+  color: var(--color-red-500);
   margin-top: 6px;
 }
 
@@ -787,8 +882,8 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: var(--color-slate-50);
+  border: 1px solid var(--color-slate-200);
   border-radius: 6px;
   padding: 6px 10px;
 }
@@ -798,7 +893,7 @@ body {
   align-items: center;
   gap: 6px;
   text-decoration: none;
-  color: #4f46e5;
+  color: var(--color-indigo-600);
   font-size: 0.83rem;
   overflow: hidden;
 }
@@ -817,7 +912,7 @@ body {
 .btn-danger-ghost {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--color-slate-400);
   cursor: pointer;
   padding: 4px;
   border-radius: 4px;
@@ -828,16 +923,17 @@ body {
 }
 
 .btn-danger-ghost:hover {
-  color: #ef4444;
+  color: var(--color-red-500);
 }
 
 .btn-icon {
   font-size: 0.95rem;
 }
 
-/* ── Phase 13b: Sharing ─────────────────────────────────────── */
+ /* SHARING  ·  NoteCard (SharePanel) */
+
 .btn-share {
-  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  background: var(--gradient-share);
   color: white;
   border: none;
   border-radius: 8px;
@@ -852,8 +948,8 @@ body {
 .share-panel {
   margin-top: 12px;
   padding: 12px;
-  background: #f8f7ff;
-  border: 1px solid #e0e7ff;
+  background: var(--color-violet-25);
+  border: 1px solid var(--color-indigo-100);
   border-radius: 10px;
 }
 
@@ -866,7 +962,7 @@ body {
 .share-email-input {
   flex: 1;
   padding: 6px 10px;
-  border: 1px solid #c7d2fe;
+  border: 1px solid var(--color-indigo-200);
   border-radius: 6px;
   font-size: 0.85rem;
   min-width: 160px;
@@ -889,9 +985,9 @@ body {
   left: 0;
   right: 0;
   background: white;
-  border: 1px solid #c7d2fe;
+  border: 1px solid var(--color-indigo-200);
   border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px var(--shadow-black-sm);
   list-style: none;
   margin: 0;
   padding: 4px 0;
@@ -903,25 +999,25 @@ body {
 .share-suggestion-item {
   padding: 7px 12px;
   font-size: 0.85rem;
-  color: #374151;
+  color: var(--color-gray-700);
   cursor: pointer;
 }
 
 .share-suggestion-item:hover {
-  background: #eef2ff;
-  color: #4f46e5;
+  background: var(--color-indigo-50);
+  color: var(--color-indigo-600);
 }
 
 .share-role-select {
   padding: 6px 8px;
-  border: 1px solid #c7d2fe;
+  border: 1px solid var(--color-indigo-200);
   border-radius: 6px;
   font-size: 0.85rem;
   background: white;
 }
 
 .share-error {
-  color: #dc2626;
+  color: var(--color-red-600);
   font-size: 0.78rem;
   margin-top: 6px;
 }
@@ -944,7 +1040,7 @@ body {
 
 .collaborator-email {
   flex: 1;
-  color: #374151;
+  color: var(--color-gray-700);
 }
 
 .collaborator-role {
@@ -955,26 +1051,26 @@ body {
   text-transform: uppercase;
 }
 
-.role-owner  { background: #fef3c7; color: #92400e; }
-.role-editor { background: #d1fae5; color: #065f46; }
-.role-viewer { background: #e0e7ff; color: #3730a3; }
+.role-owner  { background: var(--color-amber-100);   color: var(--color-amber-800); }
+.role-editor { background: var(--color-emerald-100); color: var(--color-emerald-900); }
+.role-viewer { background: var(--color-indigo-100);  color: var(--color-indigo-800); }
 
 .btn-revoke {
   background: none;
   border: none;
-  color: #ef4444;
+  color: var(--color-red-500);
   cursor: pointer;
   font-size: 0.85rem;
   padding: 2px 6px;
   border-radius: 4px;
 }
 
-.btn-revoke:hover { background: #fee2e2; }
+.btn-revoke:hover { background: var(--color-red-100); }
 
 .role-badge {
   margin-left: 8px;
-  background: #e0e7ff;
-  color: #3730a3;
+  background: var(--color-indigo-100);
+  color: var(--color-indigo-800);
   font-size: 0.7rem;
   padding: 1px 7px;
   border-radius: 10px;
@@ -984,7 +1080,26 @@ body {
 
 
 
-/* Mobile responsive */
+/* RESPONSIVE */
+
+/* Desktop ≥ 1024px — 2-column notes grid */
+@media (min-width: 1024px) {
+  .notes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet 641px – 1023px — 1-column, comfortable padding */
+@media (min-width: 641px) and (max-width: 1023px) {
+  .app-container {
+    max-width: 720px;
+  }
+  .notes-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Mobile ≤ 640px — compact spacing */
 @media (max-width: 640px) {
   body {
     padding: 10px;
@@ -995,5 +1110,12 @@ body {
   }
   .notes-grid {
     grid-template-columns: 1fr;
+  }
+  .note-form,
+  .notes-section {
+    padding: 24px 16px;
+  }
+  .header {
+    padding: 28px 16px;
   }
 }
