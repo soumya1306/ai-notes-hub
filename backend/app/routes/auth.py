@@ -101,7 +101,7 @@ oauth.register(
 )
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-ENV = os.getenv("ENV", "development")
+ENV = os.getenv("APP_ENV", "development")
 
 
 @router.get("/google/login")
@@ -109,6 +109,7 @@ async def google_login(request: Request):
     """Redirects user to Google's OAuth consent screen."""
     redirect_uri = str(request.url_for("google_callback"))
     if ENV == "production":
+        print(f"Original redirect URI: {redirect_uri}")
         redirect_uri = redirect_uri.replace("http://", "https://")
     return await oauth.google.authorize_redirect(request, redirect_uri)
 

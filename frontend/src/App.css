@@ -236,14 +236,40 @@ body {
 .header {
   background: var(--gradient-primary);
   color: white;
-  padding: 40px 30px;
-  text-align: center;
+  padding: 24px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.header-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px var(--shadow-black-md);
+  flex-shrink: 0;
 }
 
 .header h1 {
-  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-size: clamp(1.2rem, 3vw, 1.75rem);
   font-weight: 700;
-  margin-bottom: 10px;
+  margin-bottom: 2px;
+}
+
+.header-tagline {
+  font-size: 0.8rem;
+  opacity: 0.72;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  margin: 0;
 }
 
 /* NOTE FORM NoteForm.jsx */
@@ -1116,6 +1142,12 @@ body {
     padding: 24px 16px;
   }
   .header {
-    padding: 28px 16px;
+    padding: 20px 16px;
+    gap: 10px;
+  }
+  .header-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
   }
 }

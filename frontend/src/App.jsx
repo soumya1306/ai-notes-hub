@@ -163,7 +163,13 @@ function NotesPage() {
   return (
     <div className="app-container">
       <div className="header">
-        <h1>AI Notes Hub</h1>
+        <div className="header-brand">
+          <img src="/logo.svg" alt="AI Notes Hub" className="header-logo" />
+          <div>
+            <h1>AI Notes Hub</h1>
+            <p className="header-tagline">Smart notes, powered by AI</p>
+          </div>
+        </div>
         <button className="logout-btn" onClick={logout}>
           Sign Out
         </button>
