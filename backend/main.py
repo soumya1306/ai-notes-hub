@@ -15,7 +15,21 @@ from slowapi.errors import RateLimitExceeded
 from app.core.limiter import limiter
 from app.middleware.security import SecurityHeadersMiddleware
 
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from sentry_sdk.integrations.sqlalchemy import SqlalchemyIntegration
+
 load_dotenv()
+
+# Initialize Sentry
+sentry_sdk.init(
+    dsn=os.getenv("SENTRY_DSN", ""),
+    integrations=[FastApiIntegration(), SqlalchemyIntegration()],
+    traces_sample_rate=1.0,
+    profile_session_sample_rate=1.0,
+    environment=os.getenv("APP_ENV", "production"),
+    send_default_pii=False,
+)
 
 # Run any pending migrations automatically on startup
 _alembic_cfg = AlembicConfig("alembic.ini")
