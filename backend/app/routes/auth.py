@@ -107,6 +107,9 @@ FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 async def google_login(request: Request):
     """Redirects user to Google's OAuth consent screen."""
     redirect_uri = request.url_for("google_callback")
+    redirect_uri = str(redirect_uri).replace(
+        "http://", "https://"
+    )  # Ensure HTTPS for OAuth callback
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 
