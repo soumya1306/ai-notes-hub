@@ -32,7 +32,7 @@ sentry_sdk.init(
 )
 
 # Run any pending migrations automatically on startup
-_alembic_cfg = AlembicConfig("alembic.ini")
+_alembic_cfg = AlembicConfig(os.path.join(os.path.dirname(__file__), "alembic.ini"))
 alembic_command.upgrade(_alembic_cfg, "head")
 
 app = FastAPI(title="AI Notes Hub", version="5.0.0")
