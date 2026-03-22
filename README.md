@@ -25,7 +25,7 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 15: Unit + Integration Tests (pytest, pytest-asyncio, httpx, rollback isolation, mocking)
 - ✅ Phase 16: Docker + GitHub Actions CI/CD (Dockerfile, docker-compose, pytest in CI, auto-deploy)
 - ✅ Phase 17: Sentry + Performance Monitoring (sentry-sdk[fastapi], @sentry/react, ErrorBoundary, tracing, session replay)
-- 📅 Phase 18: System Design Doc (ARCHITECTURE.md)
+- ✅ Phase 18: System Design Doc (ARCHITECTURE.md — layered arch, auth flow, AI pipeline, RAG, WebSockets, security, trade-offs)
 - 📅 Phase 19: Full Production Deploy
 - 📅 Phase 20: Polish + Portfolio README
 
@@ -96,15 +96,19 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Sentry backend — sentry-sdk[fastapi] with FastApiIntegration + SqlalchemyIntegration, performance tracing
 - Sentry frontend — @sentry/react with browserTracingIntegration, session replay, ErrorBoundary
 - Environment-aware — Sentry disabled in CI (empty DSN), development vs production environments tagged
+- System design documented — ARCHITECTURE.md covers layered arch, auth flow, AI/RAG pipeline, WebSockets, security design, and trade-offs
 - Responsive UI — Clean gradient design, smooth animations
 
 ### Coming Soon
-- System design documentation (ARCHITECTURE.md)
+- Full production hardening (Phase 19)
+- Portfolio polish (Phase 20)
 
 ## Project Structure
 
 ```
 ai-notes-hub/
+├── ARCHITECTURE.md              # Full system design doc — architecture, flows, trade-offs
+├── README.md
 ├── .github/
 │   └── workflows/
 │       └── ci.yml               # GitHub Actions — pytest on push/PR
