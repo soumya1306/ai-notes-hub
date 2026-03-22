@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ai_notes_hub
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.14
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/ai_notes_hub_test
+          SECRET_KEY: test_secret_key
+          GOOGLE_CLIENT_ID: test_google_client_id
+          GOOGLE_CLIENT_SECRET: test_google_client_secret
+          FRONTEND_URL: http://localhost:5173
+          GEMINI_API_KEY: test_gemini_api_key
+          CLOUDINARY_CLOUD_NAME: test_cloudinary_cloud_name
+          CLOUDINARY_API_KEY: test_cloudinary_api_key
+          CLOUDINARY_API_SECRET: test_cloudinary_api_secret
+        run: |
+          pytest app/tests/ -v

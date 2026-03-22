@@ -15,7 +15,10 @@ load_dotenv()
 config = context.config
 
 # Override sqlalchemy.url from the environment so we never hardcode credentials
-config.set_main_option("sqlalchemy.url", os.environ["DATABASE_URL"])
+db_url = os.environ["DATABASE_URL"].replace(
+    "postgresql+asyncpg://", "postgresql+psycopg2://"
+)
+config.set_main_option("sqlalchemy.url", db_url)
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -24,6 +27,7 @@ if config.config_file_name is not None:
 
 # Wire up our models for autogenerate support
 from app.models.models import Base  # noqa: E402
+
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -70,9 +74,7 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()
