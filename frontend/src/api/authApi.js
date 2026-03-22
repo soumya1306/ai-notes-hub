@@ -43,7 +43,7 @@ export const authApi = {
   },
 
   async logout(refresh_token) {
-    const res = await fetch(`${API_BASE}/auth/logout/`, {
+    const res = await fetch(`${API_BASE}/auth/logout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token }),
