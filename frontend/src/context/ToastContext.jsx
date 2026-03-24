@@ -1,5 +1,5 @@
 import { createContext, useContext, useRef, useState } from "react";
-import { FaInfo, FaCheck, FaExclamationTriangle, FaCross} from "react-icons/fa"
+import { FaInfo, FaCheck, FaExclamationTriangle, FaTimes} from "react-icons/fa"
 
 const ToastContext = createContext();
 
@@ -30,7 +30,7 @@ export const ToastProvider = ({ children }) => {
               {type === "info" && <FaInfo />}
               {type === "success" && <FaCheck />}
               {type === "warning" && <FaExclamationTriangle />}
-              {type === "error" && <FaCross />}
+              {type === "error" && <FaTimes />}
             </span>
             <span className="toast-message">{message}</span>
             <button className="toast-dismiss" onClick={() => dismissToast(id)}>x</button>

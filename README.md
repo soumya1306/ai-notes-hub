@@ -27,7 +27,8 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - ✅ Phase 17: Sentry + Performance Monitoring (sentry-sdk[fastapi], @sentry/react, ErrorBoundary, tracing, session replay)
 - ✅ Phase 18: System Design Doc (ARCHITECTURE.md — layered arch, auth flow, AI pipeline, RAG, WebSockets, security, trade-offs)
 - ✅ Phase 19: Full Production Deploy (Railway backend + Vercel frontend, Alembic auto-migrations, Railway root directory config)
-- 📅 Phase 20: Polish + Portfolio README
+- 📅 Phase 20: UI Improvements (UserMenu, Toaster notifications, app logo, title bar update)
+- 📅 Phase 21: Polish + Portfolio README
 
 ## Tech Stack
 
@@ -100,9 +101,13 @@ An exceptional full-stack AI-powered second brain app built with React + FastAPI
 - Production deployed — Railway (backend + PostgreSQL), Vercel (frontend), Alembic migrations run automatically on startup
 - railway.json scoped to backend/ — Root directory set to `backend/` so Railway builds from the correct context
 - Responsive UI — Clean gradient design, smooth animations
+- UserMenu — Dedicated user menu component for profile actions and logout
+- Toaster notifications — In-app toast feedback for user actions (save, delete, errors, sharing)
+- App logo + title bar — Custom logo added; browser title bar updated to reflect app branding
+- CSS restructure — Unified colour palette, eliminated duplication, improved responsiveness across breakpoints
 
 ### Coming Soon
-- Portfolio polish (Phase 20)
+- Portfolio polish (Phase 21)
 
 ## Project Structure
 
@@ -132,7 +137,8 @@ ai-notes-hub/
 │       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
 │       │   ├── NoteList.jsx         # Notes grid + inline edit + AI buttons + SharePanel + typing indicators
 │       │   ├── NoteAttachments.jsx  # Per-note file upload/delete UI (Cloudinary)
-│       │   └── QAPanel.jsx          # RAG Q&A panel — ask questions, get Gemini answers
+│       │   ├── QAPanel.jsx          # RAG Q&A panel — ask questions, get Gemini answers
+│       │   └── UserMenu.jsx         # User profile menu — account actions + logout
 │       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle + QAPanel
 │       └── main.jsx                 # BrowserRouter + AuthProvider + Sentry.init + ErrorBoundary
 └── backend/
