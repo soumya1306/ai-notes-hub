@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
+import { useToast } from "./context/ToastContext";
 import NoteForm from "./components/NoteForm";
 import NotesList from "./components/NoteList";
+import UserMenu from "./components/UserMenu";
 import "./App.css";
 import { notesApi, semanticSearch } from "./api/notesAPi";
 import RegisterForm from "./components/RegisterForm";
@@ -21,6 +23,8 @@ function NotesPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [searchMode, setSearchMode] = useState("keyword");
   const [semanticLoading, setSemanticLoading] = useState(false);
+
+  const { addToast } = useToast();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
@@ -112,32 +116,48 @@ function NotesPage() {
   };
 
   const addNote = async (content, tags) => {
-    const newNote = await notesApi.createNote(
-      content,
-      tags,
-      refreshAccessToken,
-    );
-    setNotes((prev) => [newNote, ...prev]);
+    try {
+      const newNote = await notesApi.createNote(
+        content,
+        tags,
+        refreshAccessToken,
+      );
+      setNotes((prev) => [newNote, ...prev]);
+      addToast("Note created!", "success");
+    } catch (error) {
+      addToast(`Failed to add note: ${error.message}`, "error");
+
+    }
   };
 
   const deleteNote = async (id) => {
-    await notesApi.deleteNote(id, refreshAccessToken);
-    setNotes((prev) => prev.filter((note) => note.id !== id));
+    try {
+      await notesApi.deleteNote(id, refreshAccessToken);
+      setNotes((prev) => prev.filter((note) => note.id !== id));
+      addToast("Note deleted.", "success");
+    } catch (err) {
+      addToast(`Failed to delete note: ${error.message}`, "error");
+    }
   };
 
   const updateNote = async (id, content, tags = []) => {
-    const note = notes.find((n) => n.id === id);
-    const resolvedTags = tags ?? note?.tags ?? [];
-    const updatedNote = await notesApi.updateNote(
-      id,
-      content,
-      resolvedTags,
-      refreshAccessToken,
-    );
-
-    setNotes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, ...updatedNote } : n)),
-    );
+    try {
+      const note = notes.find((n) => n.id === id);
+      const resolvedTags = tags ?? note?.tags ?? [];
+      const updatedNote = await notesApi.updateNote(
+        id,
+        content,
+        resolvedTags,
+        refreshAccessToken,
+      );
+      setNotes((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, ...updatedNote } : n)),
+      );
+      addToast("Note saved.", "success")
+    } catch (err) {
+      addToast(err.message, "error")
+    }
+    
   };
 
   const liveUpdateNote = (id, content, tags) => {
@@ -170,9 +190,7 @@ function NotesPage() {
             <p className="header-tagline">Smart notes, powered by AI</p>
           </div>
         </div>
-        <button className="logout-btn" onClick={logout}>
-          Sign Out
-        </button>
+        <UserMenu />
       </div>
       <NoteForm onAdd={addNote} />
 
