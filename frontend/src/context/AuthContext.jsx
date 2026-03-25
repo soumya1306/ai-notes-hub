@@ -1,5 +1,6 @@
 import { createContext, useCallback, useState, useContext, useMemo, useEffect } from "react";
 import { authApi } from "../api/authApi";
+import { setModuleAccessToken } from "../api/notesAPi";
 
 
 const AuthContext = createContext();
@@ -37,6 +38,7 @@ export function AuthProvider({ children }) {
     authApi.refresh(storedRefresh)
       .then((data) => {
         setAccessToken(data.access_token);
+        setModuleAccessToken(data.access_token);
         setRefreshToken(data.refresh_token);
         setUser(decodeToken(data.access_token));
         localStorage.setItem("refresh_token", data.refresh_token);
@@ -52,6 +54,7 @@ export function AuthProvider({ children }) {
   const login = useCallback(async (email, password) => {
     const data = await authApi.login(email, password);
     setAccessToken(data.access_token);
+    setModuleAccessToken(data.access_token);
     setRefreshToken(data.refresh_token);
     setUser(decodeToken(data.access_token));
     localStorage.setItem("refresh_token", data.refresh_token);
@@ -59,6 +62,7 @@ export function AuthProvider({ children }) {
 
   const loginWithTokens = useCallback((access_token, refresh_token) => {
     setAccessToken(access_token);
+    setModuleAccessToken(access_token);
     setRefreshToken(refresh_token);
     setUser(decodeToken(access_token));
     localStorage.setItem("refresh_token", refresh_token);
@@ -77,6 +81,7 @@ export function AuthProvider({ children }) {
       await authApi.logout(refreshToken);
     }
     setAccessToken(null);
+    setModuleAccessToken(null);
     setRefreshToken(null);
     setUser(null);
     localStorage.removeItem("refresh_token");
@@ -86,6 +91,7 @@ export function AuthProvider({ children }) {
     if (!refreshToken) throw new Error("No refresh token available");
     const data = await authApi.refresh(refreshToken);
     setAccessToken(data.access_token);
+    setModuleAccessToken(data.access_token);
     setRefreshToken(data.refresh_token);
     localStorage.setItem("refresh_token", data.refresh_token);
     return data.access_token;

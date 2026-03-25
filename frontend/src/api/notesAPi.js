@@ -2,6 +2,10 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 
 let isRefreshing = null; // Global flag to track ongoing refresh
 
+// Module-level token store
+let _accessToken = null;
+export const setModuleAccessToken = (token) => { _accessToken = token; };
+
 const authFetch = async (url, options = {}, refreshAccessToken) => {
 
   const buildHeaders = (token) => {
@@ -15,7 +19,7 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
 
   const res = await fetch(url, {
     ...options,
-    headers: buildHeaders(localStorage.getItem("access_token")),
+    headers: buildHeaders(_accessToken),
   });
 
   if (res.status === 429) {
