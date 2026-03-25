@@ -205,6 +205,29 @@ function SharePanel({ noteId, onClose }) {
   );
 }
 
+function ShareModal({ noteId, onClose }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [onClose]);
+
+  return (
+    <div
+      className="share-modal-overlay"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="share-modal" role="dialog" aria-modal="true" aria-label="Share note">
+        <div className="share-modal-header">
+          <span className="share-modal-title"><FaShare /> Share Note</span>
+          <button className="share-modal-close" onClick={onClose} aria-label="Close">✕</button>
+        </div>
+        <SharePanel noteId={noteId} onClose={onClose} />
+      </div>
+    </div>
+  );
+}
+
 function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
   const [editingId, setEditingId] = useState(null);
   const [summaries, setSummaries] = useState({});
@@ -366,15 +389,15 @@ function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
 
             {isOwner && (
               <button
-                onClick={() => setShowSharePanel((prev) => !prev)}
+                onClick={() => setShowSharePanel(true)}
                 className="btn btn-share"
               >
-                <FaShare /> {showSharePanel ? "Close" : "Share"}
+                <FaShare /> Share
               </button>
             )}
           </div>
           {showSharePanel && isOwner && (
-            <SharePanel
+            <ShareModal
               noteId={note.id}
               onClose={() => setShowSharePanel(false)}
             />
