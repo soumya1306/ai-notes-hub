@@ -265,24 +265,25 @@ function NotesPage() {
 }
 
 function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) return null;
   return isAuthenticated ? children : <Navigate to="/login" replace />;
 }
 
 function App() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
 
   return (
     <Routes>
       <Route
         path="/login"
-        element={isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />}
+        element={!isLoading && isAuthenticated ? <Navigate to="/" replace /> : <LoginForm />}
       />
 
       <Route
         path="/register"
         element={
-          isAuthenticated ? <Navigate to="/" replace /> : <RegisterForm />
+          !isLoading && isAuthenticated ? <Navigate to="/" replace /> : <RegisterForm />
         }
       />
 

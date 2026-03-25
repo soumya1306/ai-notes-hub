@@ -1,4 +1,4 @@
-import { createContext, useCallback, useState, useContext, useMemo } from "react";
+import { createContext, useCallback, useState, useContext, useMemo, useEffect } from "react";
 import { authApi } from "../api/authApi";
 
 
@@ -16,25 +16,44 @@ function decodeToken(token) {
 }
 
 export function AuthProvider({ children }) {
-  const [accessToken, setAccessToken] = useState(() => {
-    return localStorage.getItem("access_token") || null;
-  });
+  const [accessToken, setAccessToken] = useState(null);
 
   const [refreshToken, setRefreshToken] = useState(() => {
     return localStorage.getItem("refresh_token") || null;
   });
 
-  const [user, setUser] = useState(() => {
-    const stored = localStorage.getItem("access_token");
-    return stored ? decodeToken(stored) : null;
-  });
+  const [user, setUser] = useState(null);
+
+  // True while we're attempting a silent refresh on mount
+  const [isLoading, setIsLoading] = useState(() => !!localStorage.getItem("refresh_token"));
+
+  // On mount: silently restore the session using the stored refresh token
+  useEffect(() => {
+    const storedRefresh = localStorage.getItem("refresh_token");
+    if (!storedRefresh) {
+      setIsLoading(false);
+      return;
+    }
+    authApi.refresh(storedRefresh)
+      .then((data) => {
+        setAccessToken(data.access_token);
+        setRefreshToken(data.refresh_token);
+        setUser(decodeToken(data.access_token));
+        localStorage.setItem("refresh_token", data.refresh_token);
+      })
+      .catch(() => {
+        // Refresh token expired — clear stored token
+        setRefreshToken(null);
+        localStorage.removeItem("refresh_token");
+      })
+      .finally(() => setIsLoading(false));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const login = useCallback(async (email, password) => {
     const data = await authApi.login(email, password);
     setAccessToken(data.access_token);
     setRefreshToken(data.refresh_token);
     setUser(decodeToken(data.access_token));
-    localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("refresh_token", data.refresh_token);
   }, []);
 
@@ -42,7 +61,6 @@ export function AuthProvider({ children }) {
     setAccessToken(access_token);
     setRefreshToken(refresh_token);
     setUser(decodeToken(access_token));
-    localStorage.setItem("access_token", access_token);
     localStorage.setItem("refresh_token", refresh_token);
   }, []);
 
@@ -61,7 +79,6 @@ export function AuthProvider({ children }) {
     setAccessToken(null);
     setRefreshToken(null);
     setUser(null);
-    localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
   }, [refreshToken]);
 
@@ -70,7 +87,6 @@ export function AuthProvider({ children }) {
     const data = await authApi.refresh(refreshToken);
     setAccessToken(data.access_token);
     setRefreshToken(data.refresh_token);
-    localStorage.setItem("access_token", data.access_token);
     localStorage.setItem("refresh_token", data.refresh_token);
     return data.access_token;
   }, [refreshToken]);
@@ -80,13 +96,14 @@ export function AuthProvider({ children }) {
       accessToken,
       user,
       isAuthenticated: !!accessToken,
+      isLoading,
       login,
       loginWithTokens,
       register,
       logout,
       refreshAccessToken,
     }),
-    [accessToken, user, login, loginWithTokens, register, logout, refreshAccessToken],
+    [accessToken, user, isLoading, login, loginWithTokens, register, logout, refreshAccessToken],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
