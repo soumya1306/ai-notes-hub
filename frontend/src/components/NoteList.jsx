@@ -212,6 +212,17 @@ function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
   const [remoteTyping, setRemoteTyping] = useState(null);
   const typingTimer = useRef(null);
   const [showSharePanel, setShowSharePanel] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
+  const contentRef = useRef(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+
+  useEffect(() => {
+    if (contentRef.current) {
+      setIsOverflowing(
+        contentRef.current.scrollHeight > contentRef.current.clientHeight + 2
+      );
+    }
+  }, [note.content]);
 
   const { refreshAccessToken, user, accessToken } = useAuth();
 
@@ -286,16 +297,26 @@ function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
           onSave={(html) => {
             onUpdate(note.id, html, note.tags);
             setEditingId(null);
+            setCollapsed(true);
           }}
-          onCancel={() => setEditingId(null)}
+          onCancel={() => { setEditingId(null); setCollapsed(true); }}
           onTyping={handleTyping}
         />
       ) : (
         <div>
           <div
-            className="note-content tiptap-output"
+            ref={contentRef}
+            className={`note-content tiptap-output${collapsed ? " note-content--collapsed" : ""}`}
             dangerouslySetInnerHTML={{ __html: note.content }}
           />
+          {(isOverflowing || !collapsed) && (
+            <button
+              className="btn-read-more"
+              onClick={() => setCollapsed((c) => !c)}
+            >
+              {collapsed ? "Read more" : "Show less"}
+            </button>
+          )}
 
           {summaries[note.id] && (
             <div className="note-summary">
@@ -327,7 +348,7 @@ function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
           <div className="note-actions">
             {canEdit && (
               <button
-                onClick={() => setEditingId(note.id)}
+                onClick={() => { setCollapsed(false); setEditingId(note.id); }}
                 className="btn btn-edit"
               >
                 <FaEdit /> Edit

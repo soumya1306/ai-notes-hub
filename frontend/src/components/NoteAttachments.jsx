@@ -96,7 +96,7 @@ export const NoteAttachments = ({ noteId }) => {
                 <a
                   href={att.file_url}
                   target="_blank"
-                  rel="noopener noreferer"
+                  rel="noopener noreferrer"
                   className="attachment-link"
                 >
                   <FileIcon filetype={att.file_type} />

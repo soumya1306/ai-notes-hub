@@ -760,6 +760,36 @@ body {
   font-size: 15px;
 }
 
+/* Collapsed preview — only active on mobile */
+@media (max-width: 640px) {
+  .note-content--collapsed {
+    max-height: 120px;
+    overflow: hidden;
+    -webkit-mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+    margin-bottom: 4px;
+  }
+}
+
+.btn-read-more {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--color-indigo-600);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0 10px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .btn-read-more {
+    display: inline-block;
+  }
+}
+
 .note-meta {
   color: var(--color-slate-500);
   font-size: 13px;
@@ -1598,29 +1628,174 @@ body {
 /* Mobile ≤ 640px — compact spacing */
 @media (max-width: 640px) {
   body {
-    padding: 10px;
+    padding: 0;
+    background: var(--gradient-body);
   }
+
   .app-container {
-    margin: 10px;
-    border-radius: 16px;
-  }
-  .notes-grid {
-    grid-template-columns: 1fr;
-  }
-  .note-form,
-  .notes-section {
-    padding: 24px 16px;
+    margin: 0;
+    border-radius: 0;
+    min-height: 100dvh;
+    width: 100%;
+    box-shadow: none;
   }
   .header {
-    padding: 20px 16px;
+    padding: 16px;
     gap: 10px;
+    flex-wrap: wrap;
   }
+
   .header-logo {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
   }
+
+  .header h1 {
+    font-size: 1.2rem;
+  }
+
   .user-email-short {
     display: none;
+  }
+
+  /* ── Note form & sections ── */
+  .note-form {
+    padding: 16px;
+  }
+
+  .notes-section {
+    padding: 16px;
+  }
+
+  .notes-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .note-card {
+    padding: 16px;
+  }
+
+  /* ── Prevent iOS auto-zoom on input focus (font-size must be ≥ 16px) ── */
+  .note-input,
+  .search-input,
+  .share-email-input,
+  .share-role-select {
+    font-size: 16px;
+  }
+
+  /* ── Touch targets — minimum 44×44px per Apple HIG ── */
+  .btn {
+    min-height: 44px;
+    padding: 10px 16px;
+  }
+
+  .toolbar-btn {
+    min-height: 32px;
+    min-width: 28px;
+    padding: 3px 5px;
+    font-size: 13px;
+  }
+
+  .btn-attach {
+    min-height: 40px;
+    padding: 8px 14px;
+    font-size: 0.85rem;
+  }
+
+  .btn-revoke {
+    min-height: 36px;
+    padding: 4px 12px;
+  }
+
+  .search-clear {
+    padding: 8px;
+  }
+
+  /* ── TipTap toolbar wraps on narrow screens ── */
+  .tiptap-toolbar {
+    flex-wrap: nowrap;
+    gap: 1px;
+    padding: 4px 6px;
+    overflow-x: auto;
+  }
+
+  /* ── TipTap editor: scrollable so it doesn't push everything down ── */
+  .tiptap-editor {
+    padding: 12px 14px;
+    min-height: 100px;
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  /* ── Search bar ── */
+  .search-bar-wrapper {
+    padding: 0 16px;
+    margin-bottom: 16px;
+  }
+
+  .search-mode-toggle {
+    padding: 4px 0;
+    margin-bottom: 8px;
+  }
+
+  .search-input-row {
+    padding: 4px 0;
+  }
+
+  /* ── QA Panel ── */
+  .qa-panel {
+    margin: 0 16px 20px;
+  }
+
+  .qa-input-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .qa-input-row .search-input {
+    width: 100%;
+  }
+
+  /* ── Note actions wrap on small screens ── */
+  .note-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* ── Share panel: stack inputs, prevent overflow ── */
+  .share-input-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .share-search-wrapper {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .share-role-select {
+    width: 100%;
+  }
+
+  .share-suggestions {
+    left: 0;
+    right: 0;
+    max-width: 100%;
+  }
+
+  .toast-container {
+    bottom: 0;
+    right: 0;
+    left: 0;
+    padding: 0 12px calc(12px + env(safe-area-inset-bottom));
+  }
+
+  .toast {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 10px;
   }
 }
