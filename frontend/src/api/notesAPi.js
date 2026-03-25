@@ -44,7 +44,7 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
   } catch (err) {
     console.error("Refresh failed, redirecting to login...");
     isRefreshing = null;
-    localStorage.clear();
+    localStorage.removeItem("refresh_token");
     window.location.href = "/login";
     return Promise.reject(err);
   }

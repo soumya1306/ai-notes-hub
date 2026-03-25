@@ -43,10 +43,13 @@ export function AuthProvider({ children }) {
         setUser(decodeToken(data.access_token));
         localStorage.setItem("refresh_token", data.refresh_token);
       })
-      .catch(() => {
-        // Refresh token expired — clear stored token
-        setRefreshToken(null);
-        localStorage.removeItem("refresh_token");
+      .catch((err) => {
+        // Only wipe the stored token if it's genuinely invalid/expired (401).
+        // Network errors or server errors (500) should not log the user out.
+        if (err.isAuthError) {
+          setRefreshToken(null);
+          localStorage.removeItem("refresh_token");
+        }
       })
       .finally(() => setIsLoading(false));
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
