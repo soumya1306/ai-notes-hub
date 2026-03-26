@@ -141,7 +141,13 @@ async def update_note(
         },
         exclude_user=user_id,
     )
-    return updated_note
+
+    role = (
+        db.query(NotePermission.role)
+        .filter(NotePermission.note_id == note_id, NotePermission.user_id == user_id)
+        .scalar()
+    ) or "owner"
+    return NoteResponse.model_validate(updated_note).model_copy(update={"my_role": role})
 
 
 # delete note
