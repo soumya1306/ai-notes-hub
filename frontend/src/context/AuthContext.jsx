@@ -44,8 +44,6 @@ export function AuthProvider({ children }) {
         localStorage.setItem("refresh_token", data.refresh_token);
       })
       .catch((err) => {
-        // Only wipe the stored token if it's genuinely invalid/expired (401).
-        // Network errors or server errors (500) should not log the user out.
         if (err.isAuthError) {
           setRefreshToken(null);
           localStorage.removeItem("refresh_token");

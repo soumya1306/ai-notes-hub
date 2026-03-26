@@ -63,9 +63,10 @@ async def generate_tags(content: str) -> list[str]:
     return []
 
 
-async def embed_text(text: str) -> list[float]:
+async def embed_text(text: str) -> list[float] | None:
     """
     Generate a 768-dim embedding vector for the given text.
+    Returns None if embedding is unavailable (pgvector stores NULL instead of failing).
     """
     plain = _strip_html(text)
     response = await client.aio.models.embed_content(
@@ -74,8 +75,8 @@ async def embed_text(text: str) -> list[float]:
         config={"output_dimensionality": 768},
     )
     if response.embeddings:
-        return response.embeddings[0].values or []
-    return []
+        return response.embeddings[0].values or None
+    return None
 
 
 async def ask_question(question: str, context_notes: list[str]) -> str:

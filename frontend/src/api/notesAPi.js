@@ -46,7 +46,7 @@ const authFetch = async (url, options = {}, refreshAccessToken) => {
     isRefreshing = null;
     localStorage.removeItem("refresh_token");
     window.location.href = "/login";
-    return Promise.reject(err);
+    return new Promise(() => {}); // never settles — redirect handles it, no UI error shown
   }
 };
 
