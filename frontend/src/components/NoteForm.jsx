@@ -1,7 +1,7 @@
 import { useEditor, EditorContent, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import {Extension} from "@tiptap/core";
-import Code from "@tiptap/extension-code"
+import { Extension } from "@tiptap/core";
+import Code from "@tiptap/extension-code";
 import { useState } from "react";
 
 const DoubleEnterExitMark = Extension.create({
@@ -139,8 +139,15 @@ function Toolbar({ editor }) {
   );
 }
 
-export default function NoteForm({ onAdd }) {
-  const [tagsInput, setTagsInput] = useState("");
+const NoteForm = ({
+  onAdd,
+  initialContent = "",
+  initialTags = [],
+  submitLabel = "Add Note",
+  clearOnSubmit = true,
+  onTyping,
+}) => {
+  const [tagsInput, setTagsInput] = useState(initialTags.join(", "));
 
   const editor = useEditor({
     extensions: [
@@ -148,13 +155,13 @@ export default function NoteForm({ onAdd }) {
       Code.configure({}),
       DoubleEnterExitMark,
     ],
-    content: "",
+    content: initialContent,
     editorProps: {
       attributes: {
         class: "tiptap-editor",
       },
     },
-
+    onUpdate: () => onTyping?.(),
   });
 
   const handleSubmit = (e) => {
@@ -168,15 +175,28 @@ export default function NoteForm({ onAdd }) {
         .map((tag) => tag.trim().toLocaleLowerCase())
         .filter(Boolean);
       onAdd(content, tags);
-      editor.commands.clearContent();
-      setTagsInput("");
+      if (clearOnSubmit) {
+        editor.commands.clearContent();
+        setTagsInput("");
+      }
     }
   };
 
   const isEmpty = editor?.isEmpty ?? true;
 
+  const handleKeyDown = (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="note-form">
+    <form
+      onSubmit={handleSubmit}
+      onKeyDown={handleKeyDown}
+      className="note-form"
+    >
       <div className="tiptap-wrapper">
         <Toolbar editor={editor} />
         <EditorContent editor={editor} />
@@ -190,8 +210,10 @@ export default function NoteForm({ onAdd }) {
         style={{ minHeight: "auto", fontSize: "14px", marginTop: "10px" }}
       />
       <button type="submit" className="add-btn" disabled={isEmpty}>
-        Add Note
+        {submitLabel}
       </button>
     </form>
   );
-}
+};
+
+export default NoteForm;

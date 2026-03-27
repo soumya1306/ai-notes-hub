@@ -16,7 +16,7 @@ const FileIcon = ({ filetype }) => {
   return <FiFile />;
 };
 
-export const NoteAttachments = ({ noteId }) => {
+const NoteAttachments = ({ noteId }) => {
   const { refreshAccessToken } = useAuth();
   const [attachments, setAttachments] = useState([]);
   const [uploading, setUploading] = useState(false);
@@ -117,3 +117,5 @@ export const NoteAttachments = ({ noteId }) => {
     </div>
   );
 };
+
+export default NoteAttachments;

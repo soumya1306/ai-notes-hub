@@ -1,446 +1,212 @@
 import { useState, useEffect, useRef } from "react";
-import { FaTrash, FaEdit, FaMagic, FaTags, FaShare } from "react-icons/fa";
-import { useEditor, EditorContent } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
+import { useNavigate } from "react-router-dom";
+import { FaTrash, FaMagic, FaTags, FaShare } from "react-icons/fa";
+import { useNoteSocket } from "../hooks/useNoteSocket";
 import {
   summarizeNote,
   autoTagNote,
-  getCollaborators,
-  shareNote,
-  revokeShare,
-  searchUsers,
 } from "../api/notesAPi";
 import { useAuth } from "../context/AuthContext";
-import { NoteAttachments } from "./NoteAttachments";
-import { useNoteSocket } from "../hooks/useNoteSocket";
+import NoteForm from "./NoteForm";
+import ShareModal from "./ShareModal";
 
-function InlineEditor({ initialContent, onSave, onCancel, onTyping }) {
-  const editor = useEditor({
-    extensions: [StarterKit],
-    content: initialContent,
-    editorProps: {
-      attributes: { class: "tiptap-editor" },
-    },
-    onUpdate: () => onTyping?.(),
-  });
-
-  return (
-    <div>
-      <div className="tiptap-wrapper tiptap-wrapper--edit">
-        <EditorContent editor={editor} />
-      </div>
-
-      <div className="note-actions">
-        <button
-          onClick={() => onSave(editor?.getHTML() ?? "")}
-          className="btn btn-save"
-        >
-          Save
-        </button>
-        <button onClick={onCancel}>Cancel</button>
-      </div>
-    </div>
-  );
-}
-
-function SharePanel({ noteId, onClose }) {
-  const { refreshAccessToken } = useAuth();
-  const [collaborators, setCollaborators] = useState([]);
-  const [email, setEmail] = useState("");
-  const [suggestions, setSuggestions] = useState([]);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const [role, setRole] = useState("editor");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const searchTimer = useRef(null);
-  const panelRef = useRef(null);
-
-  useEffect(() => {
-    getCollaborators(noteId, refreshAccessToken)
-      .then((data) => setCollaborators(data))
-      .catch(() => setError("Failed to fetch collaborators."));
-  }, [noteId, refreshAccessToken]);
-
-  // close dropdown on outside click
-  useEffect(() => {
-    const onClickOutside = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", onClickOutside);
-    return () => document.removeEventListener("mousedown", onClickOutside);
-  }, []);
-
-  const handleEmailChange = (e) => {
-    const val = e.target.value;
-    setEmail(val);
-    clearTimeout(searchTimer.current);
-    if (val.trim().length < 1) {
-      setSuggestions([]);
-      setShowSuggestions(false);
-      return;
-    }
-    searchTimer.current = setTimeout(async () => {
-      try {
-        const results = await searchUsers(val.trim(), refreshAccessToken);
-        setSuggestions(results);
-        setShowSuggestions(results.length > 0);
-      } catch (err) {
-        console.error("searchUsers failed:", err);
-        setSuggestions([]);
-      }
-    }, 300);
-  };
-
-  const selectSuggestion = (user) => {
-    setEmail(user.email);
-    setSuggestions([]);
-    setShowSuggestions(false);
-  };
-
-  const handleShare = async () => {
-    if (!email.trim()) return;
-    setLoading(true);
-    setError(null);
-    try {
-      const perm = await shareNote(
-        noteId,
-        email.trim(),
-        role,
-        refreshAccessToken,
-      );
-      setCollaborators((prev) => {
-        const existing = prev.find((c) => c.user_id === perm.user_id);
-        if (existing) {
-          return prev.map((c) =>
-            c.user_id === perm.user_id ? { ...c, role: perm.role } : c,
-          );
-        }
-        return [...prev, perm];
-      });
-      setEmail("");
-      setSuggestions([]);
-    } catch (err) {
-      setError(err.message || "Failed to share note.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRevoke = async (targetUserId) => {
-    try {
-      await revokeShare(noteId, targetUserId, refreshAccessToken);
-      setCollaborators((prev) =>
-        prev.filter((c) => c.user_id !== targetUserId),
-      );
-    } catch (err) {
-      setError(err.message || "Failed to revoke access.");
-    }
-  };
-
-  return (
-    <div className="share-panel" ref={panelRef}>
-      <div className="share-input-row">
-        <div className="share-search-wrapper">
-          <input
-            className="share-email-input"
-            type="text"
-            value={email}
-            onChange={handleEmailChange}
-            onKeyDown={(e) => e.key === "Enter" && handleShare()}
-            placeholder="Search by email..."
-            autoComplete="off"
-          />
-          {showSuggestions && (
-            <ul className="share-suggestions">
-              {suggestions.map((u) => (
-                <li
-                  key={u.id}
-                  className="share-suggestion-item"
-                  onMouseDown={() => selectSuggestion(u)}
-                >
-                  {u.email}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-        <select
-          className="share-role-select"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-        >
-          <option value="editor">Editor</option>
-          <option value="viewer">Viewer</option>
-        </select>
-        <button className="btn btn-ai" onClick={handleShare} disabled={loading}>
-          {loading ? "Sharing..." : "Share"}
-        </button>
-      </div>
-
-      {error && <p className="share-error">{error}</p>}
-
-      {collaborators.length > 0 && (
-        <div className="collaborators-list">
-          {collaborators.map((c) => (
-            <div key={c.user_id} className="collaborator-item">
-              <span className="collaborator-email">{c.email}</span>
-              <span className={`collaborator-role role-${c.role}`}>
-                ({c.role})
-              </span>
-              {c.role !== "owner" && (
-                <button
-                  className="btn-revoke"
-                  onClick={() => handleRevoke(c.user_id)}
-                >
-                  x
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function ShareModal({ noteId, onClose }) {
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === "Escape") onClose(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [onClose]);
-
-  return (
-    <div
-      className="share-modal-overlay"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
-    >
-      <div className="share-modal" role="dialog" aria-modal="true" aria-label="Share note">
-        <div className="share-modal-header">
-          <span className="share-modal-title"><FaShare /> Share Note</span>
-          <button className="share-modal-close" onClick={onClose} aria-label="Close">✕</button>
-        </div>
-        <SharePanel noteId={noteId} onClose={onClose} />
-      </div>
-    </div>
-  );
-}
-
-function NoteCard({ note, onDelete, onUpdate, onTagFilter, onLiveUpdate }) {
-  const [editingId, setEditingId] = useState(null);
-  const [summaries, setSummaries] = useState({});
-  const [loadingAI, setLoadingAI] = useState({});
+function NoteCard({ note, onDelete, onUpdate, onTagFilter, onSelect, isSelected, onLiveUpdate }) {
+  const [summary, setSummary] = useState(null);
+  const [loadingAI, setLoadingAI] = useState(null);
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [remoteTyping, setRemoteTyping] = useState(null);
   const typingTimer = useRef(null);
-  const [showSharePanel, setShowSharePanel] = useState(false);
-  const [collapsed, setCollapsed] = useState(true);
-  const contentRef = useRef(null);
-  const [isOverflowing, setIsOverflowing] = useState(false);
+  const navigate = useNavigate();
+  const { refreshAccessToken, accessToken } = useAuth();
 
-  useEffect(() => {
-    if (contentRef.current) {
-      setIsOverflowing(
-        contentRef.current.scrollHeight > contentRef.current.clientHeight + 2
-      );
-    }
-  }, [note.content]);
-
-  const { refreshAccessToken, user, accessToken } = useAuth();
+  const handleOpen = () => {
+    if (onSelect) onSelect(note.id);
+    else navigate(`/notes/${note.id}`);
+  };
 
   const isOwner = note.my_role === "owner";
   const canEdit = note.my_role === "owner" || note.my_role === "editor";
 
   const handleWsMessage = (payload) => {
     if (payload.type === "note_updated" && payload.note_id === note.id) {
-      onLiveUpdate(note.id, payload.content, payload.tags);
+      onLiveUpdate?.(note.id, payload.content, payload.tags);
     }
     if (payload.type === "note_deleted" && payload.note_id === note.id) {
       onDelete(note.id);
     }
     if (payload.type === "typing" && payload.note_id === note.id) {
       setRemoteTyping(payload.user_email ?? "Someone");
-      if (typingTimer.current) clearTimeout(typingTimer.current);
+      clearTimeout(typingTimer.current);
       typingTimer.current = setTimeout(() => setRemoteTyping(null), 2500);
     }
   };
 
-  useEffect(
-    () => () => {
-      if (typingTimer.current) clearTimeout(typingTimer.current);
-    },
-    [],
-  );
+  useNoteSocket(note.id, accessToken, handleWsMessage);
 
-  const { send } = useNoteSocket(note.id, accessToken, handleWsMessage);
+  useEffect(() => () => clearTimeout(typingTimer.current), []);
 
-  const handleTyping = () => {
-    send({ type: "typing", note_id: note.id });
-  };
-
-  const handleSummarize = async (note) => {
-    setLoadingAI((prev) => ({ ...prev, [note.id]: "summarize" }));
+  const handleSummarize = async () => {
+    setLoadingAI("summarize");
     try {
       const res = await summarizeNote(note.id, refreshAccessToken);
       const data = await res.json();
-      setSummaries((prev) => ({ ...prev, [note.id]: data.summary }));
-    } catch (error) {
-      console.error(error);
-      setSummaries((prev) => ({ ...prev, [note.id]: "Failed to summarize." }));
+      setSummary(data.summary);
+    } catch {
+      setSummary("Failed to summarize.");
     } finally {
-      setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
+      setLoadingAI(null);
     }
   };
 
-  const handleAutoTags = async (note) => {
-    setLoadingAI((prev) => ({ ...prev, [note.id]: "autotags" }));
+  const handleAutoTags = async () => {
+    setLoadingAI("autotags");
     try {
       const res = await autoTagNote(note.id, refreshAccessToken);
       const data = await res.json();
       onUpdate(note.id, note.content, data.tags);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingAI((prev) => ({ ...prev, [note.id]: null }));
+    } catch { /* ignore */ } finally {
+      setLoadingAI(null);
     }
   };
 
+  // Mobile inline save
+  const handleInlineSave = async (content, tags) => {
+    await onUpdate(note.id, content, tags);
+    setEditing(false);
+  };
+
+  // Mobile inline edit mode
+  if (!onSelect && editing && canEdit) {
+    return (
+      <div className="note-card note-card--editing">
+        <NoteForm
+          initialContent={note.content}
+          initialTags={note.tags}
+          onAdd={handleInlineSave}
+          submitLabel="Save"
+          clearOnSubmit={false}
+          onTyping={() => {}}
+        />
+        <button
+          className="btn-cancel-edit"
+          onClick={() => setEditing(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    );
+  }
+
   return (
-    <div className="note-card">
+    <div
+      className={`note-card${isSelected ? " note-card--selected" : ""}`}
+      onClick={onSelect ? (e) => { if (!e.target.closest(".note-actions")) handleOpen(); } : undefined}
+    >
+      {note.my_role !== "owner" && (
+        <span className="note-shared-badge">shared</span>
+      )}
+      <div
+        className={`note-content tiptap-output note-content--preview${!onSelect && !expanded ? " note-content--collapsed" : ""}`}
+        dangerouslySetInnerHTML={{ __html: note.content }}
+      />
+
+      {/* Read more / Show less — mobile only (CSS controls display) */}
+      {!onSelect && (
+        <button
+          className="btn-read-more"
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? "Show less" : "Read more"}
+        </button>
+      )}
+
       {remoteTyping && (
-        <div className="remote-typing-indicator">
-          {remoteTyping} is editing...
+        <p className="remote-typing-indicator">{remoteTyping} is typing…</p>
+      )}
+
+      {summary && (
+        <div className="note-summary">
+          <span className="summary-label">✨ Summary</span>
+          <p>{summary}</p>
         </div>
       )}
 
-      {editingId === note.id ? (
-        <InlineEditor
-          initialContent={note.content}
-          onSave={(html) => {
-            onUpdate(note.id, html, note.tags);
-            setEditingId(null);
-            setCollapsed(true);
-          }}
-          onCancel={() => { setEditingId(null); setCollapsed(true); }}
-          onTyping={handleTyping}
-        />
-      ) : (
-        <div>
-          <div
-            ref={contentRef}
-            className={`note-content tiptap-output${collapsed ? " note-content--collapsed" : ""}`}
-            dangerouslySetInnerHTML={{ __html: note.content }}
-          />
-          {(isOverflowing || !collapsed) && (
-            <button
-              className="btn-read-more"
-              onClick={() => setCollapsed((c) => !c)}
+      {note.tags.length > 0 && (
+        <div className="note-tags">
+          {note.tags.map((tag) => (
+            <span
+              key={tag}
+              className="tag tag--clickable"
+              onClick={() => onTagFilter?.(tag)}
+              title={`Filter by ${tag}`}
             >
-              {collapsed ? "Read more" : "Show less"}
-            </button>
-          )}
-
-          {summaries[note.id] && (
-            <div className="note-summary">
-              <span className="summary-label">✨ Summary</span>
-              <p>{summaries[note.id]}</p>
-            </div>
-          )}
-
-          {note.tags.length ? (
-            <div className="note-tags">
-              {note.tags.map((tag, index) => (
-                <span
-                  key={index}
-                  className="tag"
-                  onClick={() => onTagFilter?.(tag)}
-                  title={`Filter by ${tag}`}
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          ) : null}
-
-          <div className="note-meta">
-            {new Date(note.created_at).toLocaleDateString()}
-            {!isOwner && <span className="role-badge">{note.my_role}</span>}
-          </div>
-
-          <div className="note-actions">
-            {canEdit && (
-              <button
-                onClick={() => { setCollapsed(false); setEditingId(note.id); }}
-                className="btn btn-edit"
-              >
-                <FaEdit /> Edit
-              </button>
-            )}
-
-            {isOwner && (
-              <button
-                onClick={() => onDelete(note.id)}
-                className="btn btn-delete"
-              >
-                <FaTrash /> Delete
-              </button>
-            )}
-
-            {isOwner && (
-              <button
-                onClick={() => setShowSharePanel(true)}
-                className="btn btn-share"
-              >
-                <FaShare /> Share
-              </button>
-            )}
-          </div>
-          {showSharePanel && isOwner && (
-            <ShareModal
-              noteId={note.id}
-              onClose={() => setShowSharePanel(false)}
-            />
-          )}
-
-          <div className="note-actions" style={{ marginTop: "8px" }}>
-            <button
-              onClick={() => handleSummarize(note)}
-              className="btn btn-ai"
-              disabled={!!loadingAI[note.id]}
-            >
-              <FaMagic />
-              {loadingAI[note.id] === "summarize"
-                ? "Summarizing..."
-                : "Summarize"}
-            </button>
-
-            <button
-              onClick={() => handleAutoTags(note)}
-              className="btn btn-ai"
-              disabled={!!loadingAI[note.id]}
-            >
-              <FaTags />
-              {loadingAI[note.id] === "autotags" ? "Tagging..." : "Auto Tags"}
-            </button>
-          </div>
-
-          <NoteAttachments noteId={note.id} />
+              {tag}
+            </span>
+          ))}
         </div>
+      )}
+
+      <div className="note-meta">
+        <span>
+          Updated{" "}
+          {new Date(note.updated_at ?? note.created_at).toLocaleDateString()}
+        </span>
+        {!isOwner && <span className="role-badge">{note.my_role}</span>}
+      </div>
+
+      <div className="note-actions">
+        {!onSelect && canEdit && (
+          <button className="btn btn-edit" onClick={() => setEditing(true)}>Edit</button>
+        )}
+        {isOwner && (
+          <button className="btn btn-delete" onClick={() => onDelete(note.id)}>
+            <FaTrash /> Delete
+          </button>
+        )}
+        {isOwner && (
+          <button
+            className="btn btn-share"
+            onClick={() => setShowShareModal(true)}
+          >
+            <FaShare /> Share
+          </button>
+        )}
+      </div>
+
+      <div className="note-actions" style={{ marginTop: "8px" }}>
+        <button
+          className="btn btn-ai"
+          onClick={handleSummarize}
+          disabled={!!loadingAI}
+        >
+          <FaMagic />
+          {loadingAI === "summarize" ? "Summarizing..." : "Summarize"}
+        </button>
+        <button
+          className="btn btn-ai"
+          onClick={handleAutoTags}
+          disabled={!!loadingAI}
+        >
+          <FaTags />
+          {loadingAI === "autotags" ? "Tagging..." : "Auto Tags"}
+        </button>
+      </div>
+
+      {showShareModal && isOwner && (
+        <ShareModal
+          noteId={note.id}
+          onClose={() => setShowShareModal(false)}
+        />
       )}
     </div>
   );
 }
 
-export default function NotesList({
-  notes,
-  onDelete,
-  onUpdate,
-  onTagFilter,
-  onLiveUpdate,
-}) {
+export default function NotesList({ notes, onDelete, onUpdate, onTagFilter, onSelect, selectedId, onLiveUpdate }) {
   if (!notes.length) {
-    return <div className="empty-state">No notes yet. Add one above!</div>;
+    return <div className="empty-state">No notes yet. Add one!</div>;
   }
 
   return (
@@ -452,6 +218,8 @@ export default function NotesList({
           onDelete={onDelete}
           onUpdate={onUpdate}
           onTagFilter={onTagFilter}
+          onSelect={onSelect}
+          isSelected={selectedId === note.id}
           onLiveUpdate={onLiveUpdate}
         />
       ))}

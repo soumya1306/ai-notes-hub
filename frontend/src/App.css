@@ -790,6 +790,53 @@ body {
   }
 }
 
+/* Mobile inline edit card */
+.note-card--editing {
+  padding: 0;
+  overflow: hidden;
+}
+
+.note-shared-badge {
+  position: absolute;
+  top: 0;
+  right: 18px;
+  background: var(--color-indigo-600);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 4px 10px 6px;
+  border-radius: 0 0 6px 6px;
+  pointer-events: none;
+}
+
+.note-card--editing .note-form {
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  padding: 12px 14px 10px;
+}
+
+.btn-cancel-edit {
+  display: block;
+  width: 100%;
+  background: var(--color-red-50);
+  border: none;
+  border-top: 1px solid var(--color-red-200);
+  color: var(--color-red-500);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.btn-cancel-edit:hover {
+  background: var(--color-red-50);
+  color: var(--color-red-700);
+}
+
 .note-meta {
   color: var(--color-slate-500);
   font-size: 13px;
@@ -1588,10 +1635,619 @@ body {
 
 
 
+/* ── Auth Loading Spinner ── */
+.auth-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  background: var(--gradient-body);
+}
+
+.page-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.spinner {
+  width: 38px;
+  height: 38px;
+  border: 3px solid var(--color-indigo-100);
+  border-top-color: var(--color-indigo-500);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── App Shell (protected layout) ── */
+.app-shell {
+  display: flex;
+  min-height: 100dvh;
+}
+
+.shell-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-slate-50);
+}
+
+.shell-mobile-header {
+  background: var(--gradient-primary);
+  color: white;
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.shell-mobile-header .header-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shell-mobile-header .header-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.3);
+}
+
+.shell-mobile-header h1 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 0;
+  color: white;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 240px;
+  min-width: 240px;
+  background: var(--color-slate-900);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.2s ease, min-width 0.2s ease;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sidebar--collapsed {
+  width: 64px;
+  min-width: 64px;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  min-height: 70px;
+}
+
+.sidebar-logo {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.18);
+  flex-shrink: 0;
+}
+
+.sidebar-brand {
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  flex: 1;
+  letter-spacing: -0.01em;
+}
+
+.sidebar-collapse-btn {
+  background: rgba(255,255,255,0.07);
+  border: none;
+  color: rgba(255,255,255,0.55);
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  font-size: 11px;
+  transition: background 0.15s, color 0.15s;
+  margin-left: auto;
+}
+
+.sidebar-collapse-btn:hover {
+  background: rgba(255,255,255,0.14);
+  color: white;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.6);
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sidebar-link:hover {
+  background: rgba(255,255,255,0.08);
+  color: white;
+}
+
+.sidebar-link--active {
+  background: rgba(99,102,241,0.3);
+  color: white;
+}
+
+.sidebar-link-icon {
+  font-size: 0.92rem;
+  flex-shrink: 0;
+}
+
+.sidebar-footer {
+  padding: 10px 8px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+
+/* ── Notes List Page header ── */
+.notes-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px 30px 0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.notes-list-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-slate-800);
+  margin: 0;
+}
+
+.btn-new-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--gradient-primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.btn-new-note:hover {
+  opacity: 0.88;
+}
+
+/* ── Note Card preview (clamped) ── */
+.note-content--preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 0;
+  margin-bottom: 12px;
+}
+
+/* On mobile the collapsed/gradient approach handles truncation — disable line-clamp */
+@media (max-width: 640px) {
+  .note-content--preview {
+    display: block;
+    -webkit-line-clamp: unset;
+    overflow: visible;
+  }
+}
+
+/* ── New Note Page ── */
+.new-note-page {
+  max-width: 860px;
+}
+
+.new-note-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 30px 0;
+}
+
+.new-note-header h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-slate-800);
+  margin: 0;
+}
+
+/* ── Note Detail Page ── */
+.note-detail {
+  padding: 24px 30px;
+  max-width: 860px;
+}
+
+.note-detail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.note-detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-slate-100);
+  color: var(--color-slate-600);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.btn-back:hover {
+  background: var(--color-slate-200);
+  color: var(--color-slate-800);
+}
+
+.note-detail-meta {
+  font-size: 12px;
+  color: var(--color-slate-400);
+  margin-bottom: 16px;
+}
+
+.note-detail-readonly {
+  padding: 16px 0;
+  min-height: 80px;
+}
+
+.remote-typing-detail {
+  font-size: 12px;
+  color: var(--color-indigo-500);
+  margin-bottom: 10px;
+  font-style: italic;
+}
+
+.remote-typing-indicator {
+  font-size: 11px;
+  color: var(--color-indigo-400);
+  font-style: italic;
+  margin: 4px 0 6px;
+}
+
+/* ── QA Page ── */
+.qa-page {
+  padding: 24px 30px;
+  max-width: 860px;
+}
+
 /* RESPONSIVE */
 
-/* Desktop ≥ 1024px — 2-column notes grid */
+/* ── Desktop two-pane layout (≥ 1024px) ──────────────────────────────────── */
+
+.desktop-layout {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.desktop-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: var(--gradient-primary);
+  color: white;
+  flex-shrink: 0;
+  min-height: 52px;
+}
+
+.desktop-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.desktop-brand-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+.desktop-brand-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: white;
+}
+
+.desktop-panes {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* Left pane: QA + create note, or note detail */
+.pane-left {
+  flex: 1;
+  border-right: 1px solid var(--color-slate-200);
+  overflow-y: auto;
+  background: white;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Right pane: search + notes grid */
+.pane-right {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--color-slate-50);
+  padding: 18px 20px;
+}
+
+.pane-left-home {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.pane-qa-section {
+  border-bottom: 1px solid var(--color-slate-200);
+  flex-shrink: 0;
+}
+
+/* Reset qa-panel inside the pane: no card styling, flush with pane edges */
+.pane-qa-section .qa-panel {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.pane-create-section {
+  flex: 1;
+}
+
+/* Reset note-form inside the pane: no border, no background, tight padding */
+.pane-create-section .note-form {
+  padding: 12px 16px 16px;
+  background: white;
+  border-bottom: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Editor fills full pane width; disable lift transform to avoid clipping */
+.pane-create-section .tiptap-wrapper {
+  width: 100%;
+}
+.pane-create-section .tiptap-wrapper:focus-within {
+  transform: none;
+}
+
+/* Tags input fills pane width */
+.pane-create-section .tags-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Note detail edit layout: shortcuts sidebar + editor ── */
+.note-detail-edit-layout {
+  display: flex;
+  align-items: flex-start;
+}
+
+.note-shortcuts-panel {
+  width: 196px;
+  flex-shrink: 0;
+  padding: 14px 12px;
+  background: var(--color-slate-50);
+  border-right: 1px solid var(--color-slate-200);
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  max-height: calc(100dvh - 120px);
+  overflow-y: auto;
+}
+
+.note-detail-editor-col {
+  flex: 1;
+  min-width: 0;
+}
+
+.note-detail-editor-col .note-form {
+  padding: 12px 14px 14px;
+  background: white;
+  border-bottom: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.note-detail-editor-col .tiptap-wrapper:focus-within {
+  transform: none;
+}
+
+.shortcuts-heading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-slate-400);
+  margin: 0 0 12px;
+}
+
+.shortcuts-group {
+  margin-bottom: 14px;
+}
+
+.shortcuts-group-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-violet-400);
+  margin: 0 0 8px;
+}
+
+.shortcut-item {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+/* Each OS row inside a shortcut-item */
+.shortcut-os-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.shortcut-os-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-slate-400);
+  width: 34px;
+  flex-shrink: 0;
+}
+
+.shortcut-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-items: center;
+}
+
+.shortcut-key {
+  display: inline-block;
+  padding: 3px 8px;
+  background: white;
+  border: 1px solid var(--color-slate-300);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  font-size: 0.82rem;
+  font-family: ui-monospace, "SF Mono", monospace;
+  color: var(--color-slate-700);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.shortcut-desc {
+  font-size: 0.88rem;
+  color: var(--color-slate-500);
+  line-height: 1.3;
+}
+
+/* Tighten note-detail padding inside the pane */
+.pane-left .note-detail {
+  padding: 16px 20px;
+  max-width: none;
+}
+
+.pane-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-slate-400);
+  padding: 12px 20px 4px;
+  margin: 0;
+}
+
+.pane-right-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.pane-right-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-slate-800);
+  margin: 0;
+}
+
+/* Single-column notes in the right pane */
+.pane-right .notes-grid {
+  grid-template-columns: 1fr;
+}
+
+/* Mobile layout: opaque background covers the body gradient */
+.mobile-layout {
+  min-height: 100dvh;
+  background: var(--color-slate-50);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Desktop ≥ 1024px: hide mobile layout, apply 2-col grid globally */
 @media (min-width: 1024px) {
+  /* Selected note card highlight (desktop only) */
+  .note-card--selected {
+    border-left-color: var(--color-violet-500) !important;
+    background: var(--color-indigo-25);
+  }
+
+  /* Cards are clickable on desktop */
+  .note-card {
+    cursor: pointer;
+  }
+  body {
+    padding: 0;
+  }
+
+  .mobile-layout {
+    display: none;
+  }
+
   .notes-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -1858,5 +2514,31 @@ body {
     width: 100%;
     max-width: 100%;
     border-radius: 10px;
+  }
+
+  /* ── New layout pages on mobile ── */
+  .notes-list-header {
+    padding: 16px 16px 0;
+  }
+
+  .new-note-header {
+    padding: 16px 16px 0;
+  }
+
+  .note-detail {
+    padding: 16px;
+  }
+
+  .note-detail-header {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .note-detail-actions {
+    width: 100%;
+  }
+
+  .qa-page {
+    padding: 16px;
   }
 }

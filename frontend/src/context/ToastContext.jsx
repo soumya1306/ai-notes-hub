@@ -33,7 +33,7 @@ export const ToastProvider = ({ children }) => {
               {type === "error" && <FaTimes />}
             </span>
             <span className="toast-message">{message}</span>
-            <button className="toast-dismiss" onClick={() => dismissToast(id)}>x</button>
+            <button className="toast-dismiss" onClick={() => dismissToast(id)} aria-label="Dismiss"><FaTimes /></button>
           </div>
         ))}
       </div>
