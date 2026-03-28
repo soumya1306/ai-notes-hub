@@ -1,312 +1,242 @@
 # AI Notes Hub 🧠
+### A production-grade, AI-powered second brain — built end-to-end by a solo developer
 
-An exceptional full-stack AI-powered second brain app built with React + FastAPI + PostgreSQL.
+> Full-stack GenAI app featuring semantic search, RAG Q&A, real-time collaboration,
+> JWT + Google OAuth, file attachments, WebSockets, Docker CI/CD, and Sentry monitoring.
+> Shipped across 20 incremental production phases — every feature live in production.
 
-[![Live Demo](https://img.shields.io/badge/Live-Demo-green)](https://ai-notes-hub-omega.vercel.app/)
-[![GitHub](https://img.shields.io/badge/GitHub-Repo-blue)](https://github.com/soumya1306/ai-notes-hub)
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://ai-notes-hub-omega.vercel.app/)
 [![CI](https://github.com/soumya1306/ai-notes-hub/actions/workflows/ci.yml/badge.svg)](https://github.com/soumya1306/ai-notes-hub/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/badge/Python-3.14-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 
-## Current Status
+---
+
+## What Is This?
+
+AI Notes Hub is a **production-deployed, full-stack AI application** — not a tutorial clone. It combines a rich-text note-taking interface with a complete GenAI backend: semantic vector search, a RAG Q&A pipeline powered by Gemini, real-time WebSocket collaboration, JWT + Google OAuth authentication, Cloudinary file storage, rate limiting, security headers, a full pytest test suite, Docker CI/CD, and Sentry observability.
+
+Live: https://ai-notes-hub-omega.vercel.app/
+Backend API Docs: https://ai-notes-hub-backend-production.up.railway.app/docs
+
+---
+
+## Tech Stack
+
+| Layer      | Tech                                                                                     |
+|------------|------------------------------------------------------------------------------------------|
+| Frontend   | React 19, Vite, Vanilla CSS (design token system), React Router v6, TipTap, react-icons |
+| Backend    | FastAPI, Pydantic v2, Python 3.14, Uvicorn                                               |
+| Database   | PostgreSQL 17, SQLAlchemy 2.0 (async), pgvector, Alembic                                |
+| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib 1.6.8)           |
+| AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A           |
+| Storage    | Cloudinary (signed server-side uploads — images, PDF, video)                            |
+| Real-time  | WebSockets (FastAPI native), per-note rooms, per-user notification channel               |
+| Security   | slowapi rate limiting, SecurityHeadersMiddleware, HSTS, X-Frame-Options, CSP             |
+| Testing    | pytest, pytest-asyncio, httpx AsyncClient, unittest.mock, rollback isolation             |
+| DevOps     | Docker, docker-compose, GitHub Actions CI                                                |
+| Monitoring | Sentry (error tracking, performance tracing, session replay, ErrorBoundary)              |
+| Deployment | Vercel (frontend), Railway (backend + PostgreSQL)                                        |
+
+---
+
+## Architecture
+
+    +------------------------------------------------------------------+
+    |                      CLIENT (Browser)                            |
+    |               React 19 + Vite SPA - hosted on Vercel            |
+    +-----------------------------+------------------------------------+
+                                  | HTTPS / WSS
+                                  v
+    +------------------------------------------------------------------+
+    |                     BACKEND (Railway)                            |
+    |              FastAPI + Uvicorn (async Python 3.14)              |
+    |           Dockerized - python:3.14-slim base image              |
+    +-------+---------------------+------------------+----------------+
+            |                     |                  |
+            v                     v                  v
+    +--------------+   +--------------------+  +----------------+
+    |  PostgreSQL  |   |   Google Gemini    |  |   Cloudinary   |
+    |  (Railway)   |   |  gemini-2.5-flash  |  |  File storage  |
+    |  pgvector    |   |  embedding-001     |  |  images/PDF    |
+    +--------------+   +--------------------+  +----------------+
+                                  |
+                        +---------v--------+
+                        |     Sentry       |
+                        |  Error + Perf    |
+                        +------------------+
+
+Request flow: Browser -> HTTPS -> JWT validation -> CRUD layer -> PostgreSQL.
+AI routes additionally call Gemini. See ARCHITECTURE.md for the full system design doc.
+
+---
+
+## Key Engineering Decisions
+
+- pgvector over Pinecone/Weaviate: Keeps vectors in the same Postgres instance, eliminating a network hop. HNSW index over IVFFlat for better recall on small-to-medium datasets without a training step.
+- In-memory access tokens (not localStorage): Protects against XSS token theft. Tokens live in React state; the refresh flow handles seamless re-authentication on page load.
+- Refresh token rotation: Every /auth/refresh call issues a new refresh token and invalidates the old one. Stolen tokens can only be used once.
+- Server-side Cloudinary uploads: API secret never exposed to the browser. Backend acts as signing proxy; public_id stored in DB for server-side deletion.
+- Alembic upgrade on startup: Railway does not support pre-deploy scripts natively. Running alembic upgrade head in main.py is idempotent and guarantees schema is correct before the first request.
+- In-memory rate limiting (slowapi): Zero infrastructure overhead for a single-instance Railway deploy. Redis-backed limiter would be the next step at multi-instance scale.
+
+---
+
+## Features
+
+### AI
+- AI Summarization: One-click Gemini 2.5 Flash summary rendered below each note
+- AI Auto-tagging: Gemini generates and saves relevant tags automatically
+- Semantic Search: pgvector + gemini-embedding-001 HNSW cosine index; toggle between keyword and semantic mode
+- RAG Q&A: Ask natural language questions; Gemini answers grounded in your own notes via top-5 vector retrieval
+
+### Auth and Security
+- JWT access tokens (15-min expiry) + refresh token rotation (7-day expiry)
+- Google OAuth 2.0 with account linking (Authlib 1.6.8)
+- bcrypt password hashing; refresh token revocation on logout
+- Rate limiting on all auth + AI + write endpoints (slowapi)
+- Security headers on every response: HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy
+
+### Real-time Collaboration
+- WebSocket per-note rooms: live content sync, typing indicators, presence events
+- Per-user /ws/user channel for instant note_shared push notifications
+- Role-based access: owner / editor / viewer enforced at every CRUD operation
+- Share modal with live email search, role assignment, and revoke access
+
+### Editor and Storage
+- TipTap rich-text editor: bold, italic, strikethrough, headings, lists, code blocks, blockquotes
+- File attachments via Cloudinary: images, PDFs, videos per note (signed server-side upload)
+
+### Observability and Quality
+- Sentry backend: FastApiIntegration + SqlalchemyIntegration; performance tracing, slow DB query capture
+- Sentry frontend: session replay on errors, ErrorBoundary, browser tracing
+- Full pytest suite: unit tests (AI service mocked at SDK level) + integration tests (rollback isolation, Cloudinary mocked)
+- GitHub Actions CI: full pytest suite on every push/PR with Postgres service container
+
+### UI and UX
+- Responsive two-layout system: DesktopNotes two-pane layout + MobileNotes dedicated mobile view
+- DesktopNoteDetailsAndEdit: dedicated desktop note detail and inline edit component
+- Collapsible sidebar with navigation links
+- UserMenu with avatar, dropdown, and sign-out
+- ShareModal: dedicated share modal component with backdrop blur
+- Toast notification system (success, error, warning, info variants)
+- Keyboard shortcuts panel in note detail view
+- Mobile-first: 44x44px touch targets, iOS auto-zoom prevention, safe-area insets
+- CSS design token system: full color scale as custom properties, semantic gradient tokens
+
+---
+
+## Build Phases
 
 - ✅ Phase 1: React UI (CRUD, tags, animations, vanilla CSS)
 - ✅ Phase 2: FastAPI backend (REST API, CORS, Pydantic v2)
-- ✅ Phase 3: React connected to FastAPI (localStorage replaced with API calls)
-- ✅ Phase 4: PostgreSQL database (UUID keys, ARRAY tags, layered architecture)
-- ✅ Phase 5: JWT Auth + Refresh Tokens (bcrypt, PyJWT, auto token refresh, frontend auth flow)
-- ✅ Phase 6: Google OAuth (Authlib 1.6.8, SessionMiddleware, React Router v6, OAuthCallback)
-- ✅ Phase 7: Rich Text Editor (TipTap — toolbar, HTML rendering, smart mark handling)
-- ✅ Phase 8: Gemini AI — Summarize + Auto Tags (google-genai, gemini-2.5-flash, BeautifulSoup)
-- ✅ Phase 9: Search & Filter (debounced full-text search, clickable tag filter pills)
+- ✅ Phase 3: React connected to FastAPI
+- ✅ Phase 4: PostgreSQL (UUID keys, ARRAY tags, layered architecture)
+- ✅ Phase 5: JWT Auth + Refresh Tokens (bcrypt, PyJWT, auto token refresh)
+- ✅ Phase 6: Google OAuth (Authlib 1.6.8, SessionMiddleware, OAuthCallback)
+- ✅ Phase 7: Rich Text Editor (TipTap - toolbar, HTML rendering, smart mark handling)
+- ✅ Phase 8: Gemini AI - Summarize + Auto Tags (google-genai, gemini-2.5-flash, BeautifulSoup)
+- ✅ Phase 9: Search and Filter (debounced full-text search, clickable tag filter pills)
 - ✅ Phase 10: Semantic Search (pgvector, gemini-embedding-001, HNSW index, mode toggle UI)
-- ✅ Phase 11: RAG Q&A — Ask natural language questions answered by Gemini using your notes as context
-- ✅ Phase 12: File Attachments (Cloudinary — signed server-side uploads, images/PDF/video per note)
+- ✅ Phase 11: RAG Q&A - Ask natural language questions answered by Gemini using your notes as context
+- ✅ Phase 12: File Attachments (Cloudinary - signed server-side uploads, images/PDF/video per note)
 - ✅ Phase 13: Real-time Collaboration (WebSockets, note permissions, user search, share panel)
 - ✅ Phase 14: Rate Limiting + Security Headers (slowapi, Retry-After, SecurityHeadersMiddleware)
 - ✅ Phase 15: Unit + Integration Tests (pytest, pytest-asyncio, httpx, rollback isolation, mocking)
 - ✅ Phase 16: Docker + GitHub Actions CI/CD (Dockerfile, docker-compose, pytest in CI, auto-deploy)
 - ✅ Phase 17: Sentry + Performance Monitoring (sentry-sdk[fastapi], @sentry/react, ErrorBoundary, tracing, session replay)
-- ✅ Phase 18: System Design Doc (ARCHITECTURE.md — layered arch, auth flow, AI pipeline, RAG, WebSockets, security, trade-offs)
-- ✅ Phase 19: Full Production Deploy (Railway backend + Vercel frontend, Alembic auto-migrations, Railway root directory config)
-- 📅 Phase 20: UI Improvements (UserMenu, Toaster notifications, app logo, title bar update)
-- 📅 Phase 21: Polish + Portfolio README
+- ✅ Phase 18: System Design Doc (ARCHITECTURE.md)
+- ✅ Phase 19: Full Production Deploy (Railway + Vercel, Alembic auto-migrations)
+- ✅ Phase 20: UI Polish (DesktopNotes two-pane layout, MobileNotes, DesktopNoteDetailsAndEdit, ShareModal, UserMenu, toast system, CSS design tokens)
+- ✅ Phase 21: Polish + Portfolio README (recruiter-facing README, engineering decisions, cross-checked against codebase)
 
-## Tech Stack
-
-| Layer      | Tech                                                                                    |
-|------------|-----------------------------------------------------------------------------------------|
-| Frontend   | React 19, Vite, Vanilla CSS, Context API, React Router v6, TipTap, react-icons         |
-| Backend    | FastAPI, Pydantic v2, Python 3.14                                                       |
-| Database   | PostgreSQL 17, SQLAlchemy 2.0, pgvector, Alembic                                       |
-| Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib)                |
-| AI         | google-genai, gemini-2.5-flash, gemini-embedding-001, BeautifulSoup4, RAG Q&A          |
-| Storage    | Cloudinary (signed server-side uploads, images/PDF/video)                              |
-| Real-time  | WebSockets (FastAPI native), per-note rooms, per-user notification channel              |
-| Security   | slowapi rate limiting, SecurityHeadersMiddleware, HSTS, CSP, X-Frame-Options           |
-| Testing    | pytest, pytest-asyncio, httpx AsyncClient, unittest.mock, rollback isolation           |
-| DevOps     | Docker, docker-compose, GitHub Actions CI                                               |
-| Monitoring | Sentry (error tracking, performance tracing, session replay)                            |
-| Deployment | Vercel (frontend), Railway (backend + PostgreSQL)                                       |
-
-## Features
-
-### Completed
-- Full CRUD operations — Create, read, update, delete notes
-- Tag system — Organize notes with comma-separated tags
-- User registration and login — Email/password auth with JWT
-- Auto token refresh — Seamless 401 handling, retries with new token
-- Refresh token rotation — New refresh token issued on every refresh
-- Token revocation on logout — Refresh token cleared server-side
-- Per-user note isolation — Users only see their own notes and shared notes
-- Secure password hashing — bcrypt with salt rounds
-- Auth context — Global auth state via React Context API
-- Protected routes — React Router v6 with ProtectedRoute wrapper
-- Google OAuth 2.0 — One-click sign in with Google via Authlib 1.6.8
-- OAuth account linking — Google login links to existing email/password account
-- OAuthCallback page — Handles token extraction after Google redirect
-- Rich text editor — TipTap with bold, italic, strikethrough, headings, lists, code blocks, blockquotes
-- HTML rendering — Note cards render TipTap HTML output correctly
-- Smart mark handling — Double Enter exits active marks (code, bold, etc.)
-- AI summarization — One-click Gemini AI summary displayed below each note card
-- AI auto-tagging — Gemini generates and saves relevant tags automatically
-- Full-text search — Debounced search across note content and tags via array_to_string ilike
-- Clickable tag pills — Click any tag to instantly filter notes by that tag
-- Semantic search — pgvector + gemini-embedding-001 embeddings with HNSW cosine index
-- Search mode toggle — Switch between keyword and semantic search in the UI
-- Auto-embed on create/update — Embeddings generated and stored with every note save
-- RAG Q&A — Ask natural language questions; Gemini answers grounded in your own notes
-- File attachments — Upload images, PDFs, videos, and text files to any note via Cloudinary
-- Real-time collaboration — Share notes with other users as editor or viewer
-- Live note updates — WebSocket-powered instant sync across all collaborators
-- Typing indicators — See who is editing a note in real time (shows their email)
-- Presence events — Join/leave notifications when collaborators connect or disconnect
-- Note permissions — Role-based access: owner, editor, viewer
-- Share panel — Search users by email with live dropdown, assign roles, revoke access
-- Per-user WS channel — `/ws/user` channel for instant `note_shared` push notifications
-- Owner-only delete — Only the note creator can delete; editors and viewers cannot
-- Rate limiting — slowapi in-memory token bucket on all auth + AI + write endpoints
-- Retry-After header — 429 responses include exact wait time; frontend surfaces friendly message
-- Security headers — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy on every response
-- Unit tests — AI service mocked at Gemini client level; covers summarize, autotag, embed, ask, 429 handling
-- Integration tests — Full HTTP roundtrip tests for auth, notes CRUD, attachments, semantic search, RAG Q&A
-- Rollback isolation — Each test wrapped in a transaction that rolls back; zero data leakage between tests
-- Rate limiter reset — limiter counters cleared before every test to prevent cross-test 429 interference
-- Cloudinary mocked — `cloudinary.uploader.upload/destroy` patched at SDK level; real business logic tested
-- Dockerized backend — Multi-stage Dockerfile, docker-compose with pgvector/pg17 + healthcheck
-- GitHub Actions CI — Runs full pytest suite on every push/PR with Postgres service container
-- Auto-deploy — Railway deploys backend and Vercel deploys frontend on every push to main
-- Sentry backend — sentry-sdk[fastapi] with FastApiIntegration + SqlalchemyIntegration, performance tracing
-- Sentry frontend — @sentry/react with browserTracingIntegration, session replay, ErrorBoundary
-- Environment-aware — Sentry disabled in CI (empty DSN), development vs production environments tagged
-- System design documented — ARCHITECTURE.md covers layered arch, auth flow, AI/RAG pipeline, WebSockets, security design, and trade-offs
-- Production deployed — Railway (backend + PostgreSQL), Vercel (frontend), Alembic migrations run automatically on startup
-- railway.json scoped to backend/ — Root directory set to `backend/` so Railway builds from the correct context
-- Responsive UI — Clean gradient design, smooth animations
-- UserMenu — Dedicated user menu component for profile actions and logout
-- Toaster notifications — In-app toast feedback for user actions (save, delete, errors, sharing)
-- App logo + title bar — Custom logo added; browser title bar updated to reflect app branding
-- CSS restructure — Unified colour palette, eliminated duplication, improved responsiveness across breakpoints
-
-### Coming Soon
-- Portfolio polish (Phase 21)
+---
 
 ## Project Structure
 
-```
-ai-notes-hub/
-├── ARCHITECTURE.md              # Full system design doc — architecture, flows, trade-offs
-├── README.md
-├── .github/
-│   └── workflows/
-│       └── ci.yml               # GitHub Actions — pytest on push/PR
-├── docker-compose.yml           # Local dev — backend + pgvector/pg17 DB
-├── vercel.json                  # Vercel frontend deploy config
-├── frontend/
-│   ├── .env.example             # Template — copy to .env.local and fill in values
-│   └── src/
-│       ├── api/
-│       │   ├── authApi.js           # Auth endpoints + loginWithGoogle()
-│       │   └── notesAPi.js          # Notes CRUD + AI + semantic + ask + attachments + share/revoke/searchUsers + 429 handling
-│       ├── context/
-│       │   └── AuthContext.jsx      # Global auth state, loginWithTokens() for OAuth
-│       ├── hooks/
-│       │   └── useNoteSocket.js     # WebSocket hook — connect, send, auto-reconnect
-│       ├── components/
-│       │   ├── LoginForm.jsx        # Login UI + "Continue with Google" button
-│       │   ├── RegisterForm.jsx     # Register UI with useNavigate
-│       │   ├── OAuthCallback.jsx    # Handles /oauth-callback redirect from backend
-│       │   ├── NoteForm.jsx         # TipTap rich text editor + toolbar
-│       │   ├── NoteList.jsx         # Notes grid + inline edit + AI buttons + SharePanel + typing indicators
-│       │   ├── NoteAttachments.jsx  # Per-note file upload/delete UI (Cloudinary)
-│       │   ├── QAPanel.jsx          # RAG Q&A panel — ask questions, get Gemini answers
-│       │   └── UserMenu.jsx         # User profile menu — account actions + logout
-│       ├── App.jsx                  # Routes + search state + keyword/semantic mode toggle + QAPanel
-│       └── main.jsx                 # BrowserRouter + AuthProvider + Sentry.init + ErrorBoundary
-└── backend/
-    ├── Dockerfile                   # Python 3.14-slim — installs deps, runs uvicorn
-    ├── railway.json                 # Railway deploy config — root directory set to backend/
-    ├── .dockerignore                # Excludes __pycache__, .env, tests from image
-    ├── alembic/                     # Alembic migration environment
-    │   ├── versions/                # Migration scripts (one per schema change)
-    │   └── env.py                   # Alembic config — reads DATABASE_URL, swaps asyncpg→psycopg2
-    ├── alembic.ini                  # Alembic project config
-    ├── app/
-    │   ├── models/
-    │   │   └── models.py            # User + Note + NotePermission + Attachment models
-    │   ├── schemas/
-    │   │   └── schemas.py           # Pydantic v2 schemas incl. NotePermissionResponse + ShareNoteRequest
-    │   ├── routes/
-    │   │   ├── auth.py              # /auth endpoints + /auth/google OAuth routes + rate limits
-    │   │   ├── notes.py             # /notes CRUD + /summarize + /autotags + /semantic + /ask + /share + /collaborators + rate limits
-    │   │   ├── users.py             # /users/search — search users by email for share panel
-    │   │   ├── attachments.py       # /attachments upload, list, delete
-    │   │   └── ws.py                # WebSocket routes — /ws/notes/{note_id} + /ws/user
-    │   ├── core/
-    │   │   ├── auth.py              # bcrypt + PyJWT + get_current_user_id
-    │   │   └── limiter.py           # Shared slowapi Limiter instance (get_remote_address)
-    │   ├── middleware/
-    │   │   ├── __init__.py
-    │   │   └── security.py          # SecurityHeadersMiddleware — HSTS, X-Frame-Options, Referrer-Policy etc.
-    │   ├── crud/
-    │   │   ├── notes.py             # CRUD + permissions + share_note + revoke_share + get_note_collaborators
-    │   │   └── attachments.py       # Attachment CRUD — create, list, get, delete
-    │   ├── services/
-    │   │   ├── ai.py                # summarize_note() + generate_tags() + embed_text() + ask_question()
-    │   │   ├── cloudinary.py        # upload_file_to_cloudinary() + delete_file_from_cloudinary()
-    │   │   └── ws.py                # ConnectionManager — rooms, connect, disconnect, broadcast, close_room
-    │   ├── tests/
-    │   │   ├── conftest.py          # Shared fixtures — test DB engine, rollback session, AsyncClient, auth_token
-    │   │   ├── unit/
-    │   │   │   └── test_ai_service.py       # Unit tests for summarize, autotag, embed, ask, 429 handling
-    │   │   └── integration/
-    │   │       ├── test_auth_routes.py      # Register, login, refresh, logout flows
-    │   │       ├── test_notes_routes.py     # Notes CRUD, summarize, autotags, semantic search, RAG Q&A, sharing
-    │   │       └── test_attachment_routes.py# Upload, list, delete attachments with Cloudinary mocked
-    │   └── database.py              # SQLAlchemy engine + session + Base
-    ├── main.py                      # FastAPI app + Sentry init + middlewares + limiter + alembic auto-migrate on startup
-    └── requirements.txt
-```
+    ai-notes-hub/
+    ├── ARCHITECTURE.md
+    ├── README.md
+    ├── .github/
+    │   └── workflows/
+    │       └── ci.yml
+    ├── docker-compose.yml
+    ├── vercel.json
+    ├── frontend/
+    │   ├── .env.example
+    │   └── src/
+    │       ├── App.css                          # Full CSS design token system + all component styles
+    │       ├── App.jsx                          # Routes + auth + layout switching
+    │       ├── index.css
+    │       ├── main.jsx                         # BrowserRouter + AuthProvider + Sentry.init + ErrorBoundary
+    │       ├── api/
+    │       │   ├── authApi.js                   # Auth endpoints + loginWithGoogle()
+    │       │   └── notesAPi.js                  # Notes CRUD + AI + semantic + ask + attachments + share
+    │       ├── context/
+    │       │   └── AuthContext.jsx              # Global auth state, loginWithTokens() for OAuth
+    │       ├── hooks/
+    │       │   └── useNoteSocket.js             # WebSocket hook - connect, send, auto-reconnect
+    │       └── components/
+    │           ├── DesktopNotes.jsx             # Desktop two-pane notes layout
+    │           ├── DesktopNoteDetailsAndEdit.jsx # Desktop note detail + inline edit view
+    │           ├── MobileNotes.jsx              # Dedicated mobile notes layout
+    │           ├── NoteForm.jsx                 # TipTap rich text editor + toolbar
+    │           ├── NoteList.jsx                 # Notes grid + note cards + AI buttons
+    │           ├── NoteAttachments.jsx          # Per-note file upload/delete UI (Cloudinary)
+    │           ├── QAPanel.jsx                  # RAG Q&A panel
+    │           ├── ShareModal.jsx               # Share modal - email search, roles, revoke
+    │           ├── UserMenu.jsx                 # Avatar dropdown - profile info + sign out
+    │           ├── LoginForm.jsx                # Login UI + Continue with Google
+    │           ├── RegisterForm.jsx             # Register UI
+    │           └── OAuthCallback.jsx            # Handles /oauth-callback redirect
+    └── backend/
+        ├── Dockerfile
+        ├── railway.json
+        ├── .dockerignore
+        ├── alembic/
+        │   ├── versions/
+        │   └── env.py
+        ├── alembic.ini
+        ├── app/
+        │   ├── models/
+        │   │   └── models.py                    # User + Note + NotePermission + Attachment
+        │   ├── schemas/
+        │   │   └── schemas.py                   # Pydantic v2 schemas
+        │   ├── routes/
+        │   │   ├── auth.py                      # /auth endpoints + Google OAuth + rate limits
+        │   │   ├── notes.py                     # /notes CRUD + AI + semantic + RAG + sharing
+        │   │   ├── users.py                     # /users/search
+        │   │   ├── attachments.py               # /attachments upload, list, delete
+        │   │   └── ws.py                        # WebSocket routes
+        │   ├── core/
+        │   │   ├── auth.py                      # bcrypt + PyJWT + get_current_user_id
+        │   │   └── limiter.py                   # Shared slowapi Limiter instance
+        │   ├── middleware/
+        │   │   └── security.py                  # SecurityHeadersMiddleware
+        │   ├── crud/
+        │   │   ├── notes.py                     # CRUD + permissions + share + revoke
+        │   │   └── attachments.py               # Attachment CRUD
+        │   ├── services/
+        │   │   ├── ai.py                        # summarize + autotag + embed + ask
+        │   │   ├── cloudinary.py                # upload + delete
+        │   │   └── ws.py                        # ConnectionManager
+        │   ├── tests/
+        │   │   ├── conftest.py
+        │   │   ├── unit/
+        │   │   │   └── test_ai_service.py
+        │   │   └── integration/
+        │   │       ├── test_auth_routes.py
+        │   │       ├── test_notes_routes.py
+        │   │       └── test_attachment_routes.py
+        │   └── database.py
+        ├── main.py
+        └── requirements.txt
 
-## Environment Setup
+---
 
-**Backend** — set these in Railway dashboard (production) or a local `.env` file (dev):
-```
-DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/ai_notes_hub
-SECRET_KEY=your-super-secret-key-change-in-production
-GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
-FRONTEND_URL=https://your-vercel-app.vercel.app
-GEMINI_API_KEY=your-gemini-api-key
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-cloudinary-api-key
-CLOUDINARY_API_SECRET=your-cloudinary-api-secret
-SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/YYYY
-APP_ENV=production
-```
-
-**Frontend** — set these in Vercel dashboard (production) or copy `frontend/.env.example` to `frontend/.env.local` (dev):
-```
-VITE_API_BASE_URL=https://your-railway-backend.up.railway.app
-VITE_WS_BASE_URL=wss://your-railway-backend.up.railway.app
-VITE_SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/ZZZZ
-```
-
-## Run Locally with Docker (Recommended)
-
-**Prerequisites**
-- Docker Desktop
-
-```bash
-# 1. Clone the repo
-git clone https://github.com/soumya1306/ai-notes-hub.git
-cd ai-notes-hub
-
-# 2. Add your backend env file
-cp backend/.env.example backend/.env
-# Fill in your keys in backend/.env
-
-# 3. Start everything
-docker compose up --build
-```
-
-API available at `http://localhost:8000/docs` ✅
-
-## Run Locally without Docker
-
-**Prerequisites**
-- Python 3.14+
-- Node.js 18+
-- PostgreSQL 17+ with pgvector extension
-
-**Backend**
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-**Frontend**
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Database Migrations
-
-Schema is managed with **Alembic**. Migrations run automatically on app startup via `main.py`.
-
-```bash
-# Generate a new migration after changing models.py
-cd backend
-alembic revision --autogenerate -m "describe your change"
-
-# Commit the generated file — it applies automatically on next deploy
-git add alembic/versions/
-git commit -m "feat: add migration for ..."
-
-# Roll back one step if needed
-alembic downgrade -1
-```
-
-> ⚠️ Never delete migration files. Each file is a permanent record of a schema change.
-
-## Running Tests
-
-```bash
-cd backend
-pytest app/tests/ -v
-
-# run only unit tests
-pytest app/tests/unit/ -v
-
-# run only integration tests
-pytest app/tests/integration/ -v
-```
-
-Tests use rollback isolation — each test wraps in a transaction that rolls back automatically. No data ever touches your real database.
-
-## CI/CD Pipeline
-
-Deployments are handled automatically by the hosting platforms — GitHub Actions is used exclusively for running the test suite on every push and pull request.
-
-```
-git push main
-      ↓
-GitHub Actions  →  runs pytest with Postgres service container (CI only — no deploy trigger)
-
-Railway         →  watches main branch → builds backend/Dockerfile → alembic upgrade head → starts uvicorn  (auto-deploy)
-Vercel          →  watches main branch → builds frontend → deploys UI  (auto-deploy)
-```
-
-- **GitHub Actions** — runs the full pytest suite (unit + integration) against a Postgres service container. Acts as a quality gate; does not trigger or gate deployments.
-- **Railway** — connected directly to the GitHub repo; deploys the backend automatically on every push to `main`. Root directory is scoped to `backend/` via `railway.json`.
-- **Vercel** — connected directly to the GitHub repo; deploys the frontend automatically on every push to `main`.
-
-GitHub Actions workflow lives at `.github/workflows/ci.yml`.
-
-## API Endpoints
+## API Reference
 
 ### Authentication
 
@@ -315,33 +245,27 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 | POST   | /auth/register        | Create new user account              | 5/min      |
 | POST   | /auth/login           | Login and receive tokens             | 10/min     |
 | POST   | /auth/refresh         | Get new access + refresh tokens      | 20/min     |
-| POST   | /auth/logout          | Revoke refresh token server-side     | —          |
-| GET    | /auth/google/login    | Redirect to Google OAuth consent     | —          |
-| GET    | /auth/google/callback | Handle Google redirect, issue tokens | —          |
+| POST   | /auth/logout          | Revoke refresh token server-side     | -          |
+| GET    | /auth/google/login    | Redirect to Google OAuth consent     | -          |
+| GET    | /auth/google/callback | Handle Google redirect, issue tokens | -          |
 
-### Notes — requires Bearer token
+### Notes - Bearer token required
 
 | Method | Endpoint                           | Description                                  | Rate Limit |
 |--------|------------------------------------|----------------------------------------------|------------|
-| GET    | /notes/                            | Get all notes owned or shared with user      | —          |
+| GET    | /notes/                            | Get all notes owned or shared with user      | -          |
 | GET    | /notes/semantic?q=                 | Semantic similarity search via pgvector      | 30/min     |
-| POST   | /notes/ask                         | RAG Q&A — answer a question using your notes | 20/min     |
+| POST   | /notes/ask                         | RAG Q&A                                      | 20/min     |
 | POST   | /notes/                            | Create a new note + auto-embed               | 60/min     |
-| PUT    | /notes/{id}                        | Update a note + re-embed (owner or editor)   | 60/min     |
-| DELETE | /notes/{id}                        | Delete a note (owner only)                   | —          |
-| POST   | /notes/{id}/summarize              | AI summary of note via Gemini                | 20/min     |
+| PUT    | /notes/{id}                        | Update a note + re-embed                     | 60/min     |
+| DELETE | /notes/{id}                        | Delete a note (owner only)                   | -          |
+| POST   | /notes/{id}/summarize              | AI summary via Gemini                        | 20/min     |
 | POST   | /notes/{id}/autotags               | AI-generated tags via Gemini                 | 20/min     |
-| POST   | /notes/{id}/share                  | Share note with a user by email (owner only) | 30/min     |
-| DELETE | /notes/{id}/share/{target_user_id} | Revoke a user's access (owner only)          | —          |
-| GET    | /notes/{id}/collaborators          | List all collaborators and their roles       | —          |
+| POST   | /notes/{id}/share                  | Share note with a user by email              | 30/min     |
+| DELETE | /notes/{id}/share/{target_user_id} | Revoke a user's access                       | -          |
+| GET    | /notes/{id}/collaborators          | List all collaborators and their roles       | -          |
 
-### Users — requires Bearer token
-
-| Method | Endpoint         | Description                                    |
-|--------|------------------|------------------------------------------------|
-| GET    | /users/search?q= | Search users by email fragment for share panel |
-
-### Attachments — requires Bearer token
+### Attachments - Bearer token required
 
 | Method | Endpoint                     | Description                            |
 |--------|------------------------------|----------------------------------------|
@@ -351,39 +275,16 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 
 ### WebSockets
 
-| Endpoint                      | Description                                                  |
-|-------------------------------|--------------------------------------------------------------|
-| WS /ws/notes/{note_id}?token= | Per-note room — live updates, typing indicators, presence    |
-| WS /ws/user?token=            | Per-user channel — receives `note_shared` push notifications |
+| Endpoint                      | Description                                               |
+|-------------------------------|-----------------------------------------------------------|
+| WS /ws/notes/{note_id}?token= | Per-note room - live updates, typing indicators, presence |
+| WS /ws/user?token=            | Per-user channel - receives note_shared notifications     |
 
-## Security Features
-
-- **bcrypt password hashing** — Salted and hashed, Python 3.14 compatible
-- **JWT access tokens** — 15-minute expiry (HS256); refresh tokens expire in 7 days
-- **Refresh token rotation** — New refresh token on every refresh call
-- **Token revocation** — Logout clears refresh token in database
-- **Per-user data isolation** — All queries scoped via permissions table
-- **Auto token refresh** — Frontend retries failed requests with refreshed token
-- **Google OAuth 2.0** — Authlib 1.6.8, PKCE flow, state validation via SessionMiddleware
-- **OAuth account linking** — Google account links to existing email/password account
-- **Signed Cloudinary uploads** — Files uploaded server-side using API secret, never exposed to client
-- **Role-based note access** — owner / editor / viewer enforced at every CRUD operation
-- **Owner-only destructive actions** — Only owners can delete notes or revoke collaborator access
-- **Rate limiting** — slowapi token bucket; brute-force protection on auth, cost protection on AI endpoints
-- **Retry-After** — Every 429 response includes exact seconds to wait; frontend surfaces friendly ⏳ message
-- **Security headers** — HSTS, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, X-XSS-Protection on every response
-
-## Monitoring
-
-- **Sentry backend** — FastApiIntegration + SqlalchemyIntegration; captures unhandled exceptions, slow DB queries, and request traces
-- **Sentry frontend** — browserTracingIntegration captures page loads and navigation; session replay on errors (text/media masked for privacy)
-- **ErrorBoundary** — Wraps entire React app; catches render errors and reports to Sentry with fallback UI
-- **Environment tagging** — Events tagged with `development` / `production`; Sentry disabled in CI via empty DSN
+---
 
 ## Database Schema
 
-### users table
-
+### users
 | Column          | Type    | Constraints      |
 |-----------------|---------|------------------|
 | id              | UUID    | PRIMARY KEY      |
@@ -392,8 +293,7 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 | google_id       | VARCHAR | NULLABLE         |
 | refresh_token   | TEXT    | NULLABLE         |
 
-### notes table
-
+### notes
 | Column     | Type        | Constraints                            |
 |------------|-------------|----------------------------------------|
 | id         | UUID        | PRIMARY KEY                            |
@@ -404,18 +304,16 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 | created_at | TIMESTAMPTZ | DEFAULT now()                          |
 | updated_at | TIMESTAMPTZ | NULLABLE                               |
 
-### note_permissions table
-
+### note_permissions
 | Column     | Type        | Constraints                                   |
 |------------|-------------|-----------------------------------------------|
 | id         | UUID        | PRIMARY KEY                                   |
 | note_id    | UUID        | REFERENCES notes(id) ON DELETE CASCADE        |
 | user_id    | UUID        | REFERENCES users(id) ON DELETE CASCADE        |
-| role       | VARCHAR(10) | CHECK (role IN ('owner', 'editor', 'viewer')) |
+| role       | VARCHAR(10) | CHECK (role IN ('owner','editor','viewer'))   |
 | created_at | TIMESTAMPTZ | DEFAULT now()                                 |
 
-### attachments table
-
+### attachments
 | Column     | Type        | Constraints                            |
 |------------|-------------|----------------------------------------|
 | id         | UUID        | PRIMARY KEY                            |
@@ -427,10 +325,120 @@ GitHub Actions workflow lives at `.github/workflows/ci.yml`.
 | file_type  | VARCHAR(50) | NOT NULL                               |
 | created_at | TIMESTAMPTZ | DEFAULT now()                          |
 
-## Live Demo
+---
 
-🔗 [https://ai-notes-hub-omega.vercel.app/](https://ai-notes-hub-omega.vercel.app/)
+## Environment Setup
+
+Backend - Railway dashboard (production) or local .env (dev):
+
+    DATABASE_URL=postgresql+psycopg2://user:password@localhost:5432/ai_notes_hub
+    SECRET_KEY=your-super-secret-key-change-in-production
+    GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+    GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
+    FRONTEND_URL=https://your-vercel-app.vercel.app
+    GEMINI_API_KEY=your-gemini-api-key
+    CLOUDINARY_CLOUD_NAME=your-cloud-name
+    CLOUDINARY_API_KEY=your-cloudinary-api-key
+    CLOUDINARY_API_SECRET=your-cloudinary-api-secret
+    SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/YYYY
+    APP_ENV=production
+
+Frontend - Vercel dashboard (production) or frontend/.env.local (dev):
+
+    VITE_API_BASE_URL=https://your-railway-backend.up.railway.app
+    VITE_WS_BASE_URL=wss://your-railway-backend.up.railway.app
+    VITE_SENTRY_DSN=https://xxxx@oXXXX.ingest.sentry.io/ZZZZ
 
 ---
 
-Built with ❤️ by Soumya Ranjan — [https://github.com/soumya1306](https://github.com/soumya1306)
+## Run Locally
+
+### Backend with Docker (Recommended)
+
+    git clone https://github.com/soumya1306/ai-notes-hub.git
+    cd ai-notes-hub
+    cp backend/.env.example backend/.env
+    # Fill in your keys in backend/.env
+    docker compose up --build
+
+Backend API available at http://localhost:8000/docs
+
+### Frontend (always run manually)
+
+    cd frontend
+    cp .env.example .env.local
+    # Fill in your keys in .env.local
+    npm install && npm run dev
+
+Frontend available at http://localhost:5173
+
+### Backend without Docker (Python 3.14+, PostgreSQL 17+ with pgvector)
+
+    cd backend
+    python3 -m venv venv && source venv/bin/activate
+    pip install -r requirements.txt
+    uvicorn main:app --reload
+
+---
+
+## Running Tests
+
+    cd backend
+    pytest app/tests/ -v
+
+    # Unit tests only
+    pytest app/tests/unit/ -v
+
+    # Integration tests only
+    pytest app/tests/integration/ -v
+
+Tests use rollback isolation - every test wraps in a transaction that rolls back automatically. Zero data leakage between tests.
+
+---
+
+## CI/CD Pipeline
+
+    git push main
+          |
+          v
+    GitHub Actions  ->  runs full pytest suite with Postgres service container
+    Railway         ->  auto-deploys backend -> alembic upgrade head -> uvicorn
+    Vercel          ->  auto-deploys frontend -> Vite build -> CDN edge
+
+GitHub Actions runs tests as a quality gate but does not block Railway or Vercel deploys. Both platforms watch main directly.
+
+---
+
+## Database Migrations
+
+    cd backend
+    alembic revision --autogenerate -m "describe your change"
+    git add alembic/versions/ && git commit -m "feat: add migration for ..."
+    # Applies automatically on next deploy via alembic upgrade head in main.py
+
+Never delete migration files. Each is a permanent record of a schema change.
+
+---
+
+## Security
+
+- bcrypt password hashing + JWT (HS256, 15-min access / 7-day refresh)
+- Refresh token rotation - stolen tokens invalidated after first use
+- In-memory access tokens - never in localStorage (XSS protection)
+- Google OAuth 2.0 with PKCE + state validation via SessionMiddleware
+- Signed Cloudinary uploads - API secret never exposed to browser
+- RBAC at every CRUD operation - owner / editor / viewer
+- Rate limiting (slowapi) + Retry-After on every 429
+- Security headers on every response: HSTS, X-Frame-Options, CSP, Referrer-Policy, Permissions-Policy
+
+---
+
+## Monitoring
+
+- Sentry backend: FastApiIntegration + SqlalchemyIntegration; traces requests, captures slow queries
+- Sentry frontend: session replay on errors, page load tracing, ErrorBoundary fallback UI
+- CI: Sentry DSN set to empty string in GitHub Actions; no test noise in Sentry dashboard
+
+---
+
+Built with love by Soumya Ranjan - https://github.com/soumya1306
