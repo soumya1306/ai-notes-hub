@@ -41,38 +41,14 @@ const DesktopNotes = ({
       </div>
 
       <div className="desktop-panes">
-        {/* LEFT PANE: create + ask AI, or note detail */}
+        {/* LEFT PANE: ask AI + search + notes list */}
         <div className="pane-left">
-          {selectedNote ? (
-            <DesktopNoteDetailAndEdit
-              key={selectedNote.id}
-              note={selectedNote}
-              onBack={() => setSelectedNoteId(null)}
-              updateNote={updateNote}
-              deleteNote={deleteNote}
-            />
-          ) : (
-            <div className="pane-left-home">
-              <div className="pane-qa-section">
-                <QAPanel />
-              </div>
-              <div className="pane-create-section">
-                <p className="pane-section-label">New Note</p>
-                <NoteForm
-                  onAdd={async (content, tags) => {
-                    const n = await addNote(content, tags);
-                    if (n) setSelectedNoteId(n.id);
-                  }}
-                />
-              </div>
-            </div>
-          )}
-        </div>
+          <div className="pane-qa-section">
+            <QAPanel />
+          </div>
 
-        {/* RIGHT PANE: search + notes list */}
-        <div className="pane-right">
-          <div className="pane-right-header">
-            <h2 className="pane-right-title">Notes</h2>
+          <div className="pane-left-header">
+            <h2 className="pane-left-title">Notes</h2>
           </div>
 
           <div className="search-bar-wrapper">
@@ -147,6 +123,119 @@ const DesktopNotes = ({
               selectedId={selectedNoteId}
               onLiveUpdate={liveUpdateNote}
             />
+          )}
+        </div>
+
+        {/* RIGHT PANE: editor / create note */}
+        <div className="pane-right">
+          {selectedNote ? (
+            <DesktopNoteDetailAndEdit
+              key={selectedNote.id}
+              note={selectedNote}
+              onBack={() => setSelectedNoteId(null)}
+              updateNote={updateNote}
+              deleteNote={deleteNote}
+            />
+          ) : (
+            <div className="pane-right-home">
+              <div className="note-detail-edit-layout">
+                <div className="note-detail-editor-col">
+                  <p className="pane-section-label">New Note</p>
+                  <NoteForm
+                    onAdd={async (content, tags) => {
+                      const n = await addNote(content, tags);
+                      if (n) setSelectedNoteId(n.id);
+                    }}
+                  />
+                </div>
+
+                <aside className="note-shortcuts-panel">
+                  <p className="shortcuts-heading">Shortcuts</p>
+
+                  <div className="shortcuts-group">
+                    <p className="shortcuts-group-label">Formatting</p>
+                    <div className="shortcut-item">
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Mac</span><span className="shortcut-keys"><kbd className="shortcut-key">⌘</kbd><kbd className="shortcut-key">B</kbd></span></div>
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Win</span><span className="shortcut-keys"><kbd className="shortcut-key">Ctrl</kbd><kbd className="shortcut-key">B</kbd></span></div>
+                      <span className="shortcut-desc">Bold</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Mac</span><span className="shortcut-keys"><kbd className="shortcut-key">⌘</kbd><kbd className="shortcut-key">I</kbd></span></div>
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Win</span><span className="shortcut-keys"><kbd className="shortcut-key">Ctrl</kbd><kbd className="shortcut-key">I</kbd></span></div>
+                      <span className="shortcut-desc">Italic</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Mac</span><span className="shortcut-keys"><kbd className="shortcut-key">⌘</kbd><kbd className="shortcut-key">⇧</kbd><kbd className="shortcut-key">S</kbd></span></div>
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Win</span><span className="shortcut-keys"><kbd className="shortcut-key">Ctrl</kbd><kbd className="shortcut-key">⇧</kbd><kbd className="shortcut-key">S</kbd></span></div>
+                      <span className="shortcut-desc">Strikethrough</span>
+                    </div>
+                  </div>
+
+                  <div className="shortcuts-group">
+                    <p className="shortcuts-group-label">Blocks</p>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">##</kbd><kbd className="shortcut-key">␣</kbd></span>
+                      <span className="shortcut-desc">Heading</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">-</kbd><kbd className="shortcut-key">␣</kbd></span>
+                      <span className="shortcut-desc">Bullet list</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">1.</kbd><kbd className="shortcut-key">␣</kbd></span>
+                      <span className="shortcut-desc">Numbered list</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">&gt;</kbd><kbd className="shortcut-key">␣</kbd></span>
+                      <span className="shortcut-desc">Blockquote</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">```</kbd><kbd className="shortcut-key">↵</kbd></span>
+                      <span className="shortcut-desc">Code block</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">---</kbd><kbd className="shortcut-key">↵</kbd></span>
+                      <span className="shortcut-desc">Divider</span>
+                    </div>
+                  </div>
+
+                  <div className="shortcuts-group">
+                    <p className="shortcuts-group-label">Lists</p>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">Tab</kbd></span>
+                      <span className="shortcut-desc">Indent item</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">⇧</kbd><kbd className="shortcut-key">Tab</kbd></span>
+                      <span className="shortcut-desc">Outdent item</span>
+                    </div>
+                  </div>
+
+                  <div className="shortcuts-group">
+                    <p className="shortcuts-group-label">Editor</p>
+                    <div className="shortcut-item">
+                      <span className="shortcut-keys"><kbd className="shortcut-key">↵↵</kbd></span>
+                      <span className="shortcut-desc">Exit code mark</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Mac</span><span className="shortcut-keys"><kbd className="shortcut-key">⌘</kbd><kbd className="shortcut-key">↵</kbd></span></div>
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Win</span><span className="shortcut-keys"><kbd className="shortcut-key">Ctrl</kbd><kbd className="shortcut-key">↵</kbd></span></div>
+                      <span className="shortcut-desc">Save note</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Mac</span><span className="shortcut-keys"><kbd className="shortcut-key">⌘</kbd><kbd className="shortcut-key">Z</kbd></span></div>
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Win</span><span className="shortcut-keys"><kbd className="shortcut-key">Ctrl</kbd><kbd className="shortcut-key">Z</kbd></span></div>
+                      <span className="shortcut-desc">Undo</span>
+                    </div>
+                    <div className="shortcut-item">
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Mac</span><span className="shortcut-keys"><kbd className="shortcut-key">⌘</kbd><kbd className="shortcut-key">⇧</kbd><kbd className="shortcut-key">Z</kbd></span></div>
+                      <div className="shortcut-os-row"><span className="shortcut-os-label">Win</span><span className="shortcut-keys"><kbd className="shortcut-key">Ctrl</kbd><kbd className="shortcut-key">Y</kbd></span></div>
+                      <span className="shortcut-desc">Redo</span>
+                    </div>
+                  </div>
+                </aside>
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -118,6 +118,18 @@ const DesktopNoteDetailAndEdit = ({ note, onBack, updateNote, deleteNote }) => {
 
       {canEdit ? (
         <div className="note-detail-edit-layout">
+          <div className="note-detail-editor-col">
+            <NoteForm
+              initialContent={note.content}
+              initialTags={note.tags}
+              onAdd={handleSave}
+              onTyping={handleTyping}
+              submitLabel="Save"
+              clearOnSubmit={false}
+            />
+            <NoteAttachments noteId={note.id} />
+          </div>
+
           <aside className="note-shortcuts-panel">
             <p className="shortcuts-heading">Shortcuts</p>
 
@@ -203,18 +215,6 @@ const DesktopNoteDetailAndEdit = ({ note, onBack, updateNote, deleteNote }) => {
               </div>
             </div>
           </aside>
-
-          <div className="note-detail-editor-col">
-            <NoteForm
-              initialContent={note.content}
-              initialTags={note.tags}
-              onAdd={handleSave}
-              onTyping={handleTyping}
-              submitLabel="Save"
-              clearOnSubmit={false}
-            />
-            <NoteAttachments noteId={note.id} />
-          </div>
         </div>
       ) : (
         <>

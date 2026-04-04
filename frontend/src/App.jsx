@@ -27,6 +27,7 @@ function NotesShell() {
 
   const { addToast } = useToast();
 
+  // debounce search input
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 400);
     return () => clearTimeout(timer);

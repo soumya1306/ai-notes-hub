@@ -690,14 +690,15 @@ body {
 }
 
 .add-btn {
-  width: 100%;
-  margin-top: 20px;
-  padding: 16px;
+  display: block;
+  margin-top: 14px;
+  margin-left: auto;
+  padding: 8px 20px;
   background: var(--gradient-primary);
   color: white;
   border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  border-radius: 8px;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -1904,22 +1905,24 @@ body {
   overflow: hidden;
 }
 
-/* Left pane: QA + create note, or note detail */
+/* Left pane: notes list */
 .pane-left {
-  flex: 1;
+  flex: 0 0 30%;
   border-right: 1px solid var(--color-slate-200);
+  overflow-y: auto;
+  background: var(--color-slate-50);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 20px;
+}
+
+/* Right pane: editor / create + QA */
+.pane-right {
+  flex: 1;
   overflow-y: auto;
   background: white;
   display: flex;
   flex-direction: column;
-}
-
-/* Right pane: search + notes grid */
-.pane-right {
-  flex: 1;
-  overflow-y: auto;
-  background: var(--color-slate-50);
-  padding: 18px 20px;
 }
 
 .pane-left-home {
@@ -1978,9 +1981,9 @@ body {
 .note-shortcuts-panel {
   width: 196px;
   flex-shrink: 0;
-  padding: 14px 12px;
+  padding: 24px 12px 14px;
   background: var(--color-slate-50);
-  border-right: 1px solid var(--color-slate-200);
+  border-left: 1px solid var(--color-slate-200);
   position: sticky;
   top: 0;
   align-self: flex-start;
@@ -2078,9 +2081,10 @@ body {
 }
 
 /* Tighten note-detail padding inside the pane */
-.pane-left .note-detail {
+.pane-right .note-detail {
   padding: 16px 20px;
   max-width: none;
+  flex: 1;
 }
 
 .pane-section-label {
@@ -2093,23 +2097,29 @@ body {
   margin: 0;
 }
 
-.pane-right-header {
+.pane-left-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
 }
 
-.pane-right-title {
+.pane-left-title {
   font-size: 1rem;
   font-weight: 700;
   color: var(--color-slate-800);
   margin: 0;
 }
 
-/* Single-column notes in the right pane */
-.pane-right .notes-grid {
+/* Single-column notes in the left pane */
+.pane-left .notes-grid {
   grid-template-columns: 1fr;
+}
+
+.pane-right-home {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 /* Mobile layout: opaque background covers the body gradient */
