@@ -100,7 +100,7 @@ These are the parts that required real problem-solving — not just wiring up a 
 - **AI Auto-tagging** — Gemini generates and saves relevant tags automatically
 - **Semantic Search** — pgvector + gemini-embedding-001 HNSW cosine index; toggle between keyword and semantic mode
 
-![RAG Q&A](./assets/demo-ai-features.gif)
+![RAG Q&A](./assets/demo-rag-qa.gif)
 
 - **RAG Q&A** — Ask natural language questions; Gemini answers grounded in your own notes via top-5 vector retrieval
 
@@ -494,7 +494,7 @@ Never delete migration files. Each is a permanent record of a schema change.
 
 ## What's Next
 
-- Redis-backed rate limiting for multi-instance horizontal scale
+- RAG pipeline improvements — GenerationConfig tuning per task, prompt-based re-ranking, higher-dimension embeddings (3072), and system instruction grounding for more accurate Q&A
 - Per-note conflict resolution (operational transforms or CRDTs) for true simultaneous editing
 - LLM model selection UI — swap between Gemini models per note
 - Note export to Markdown / PDF
