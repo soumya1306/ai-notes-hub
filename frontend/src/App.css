@@ -1264,6 +1264,18 @@ body {
   flex: 1;
 }
 
+.search-input-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.search-input-wrapper .search-input {
+  width: 100%;
+  padding-right: 28px;
+}
+
 .search-semantic-btn {
   white-space: nowrap;
   flex-shrink: 0;
@@ -1292,8 +1304,34 @@ body {
   align-items: center;
 }
 
-.qa-input-row .search-input {
+.qa-input-wrapper {
   flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.qa-input-wrapper .search-input {
+  width: 100%;
+  padding-right: 28px;
+}
+
+.qa-clear-btn {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--color-slate-400);
+  padding: 0 2px;
+  display: flex;
+  align-items: center;
+}
+
+.qa-clear-btn:hover {
+  color: var(--color-slate-600);
 }
 
 .qa-answer {

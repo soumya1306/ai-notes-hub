@@ -73,21 +73,35 @@ const DesktopNotes = ({
               </button>
             </div>
             <div className="search-input-row">
-              <input
-                className="search-input"
-                type="text"
-                placeholder={
-                  searchMode === "semantic"
-                    ? "Ask anything about your notes..."
-                    : "Search notes or tags"
-                }
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && searchMode === "semantic")
-                    handleSemanticSearch();
-                }}
-              />
+              <div className="search-input-wrapper">
+                <input
+                  className="search-input"
+                  type="text"
+                  placeholder={
+                    searchMode === "semantic"
+                      ? "Ask anything about your notes..."
+                      : "Search notes or tags"
+                  }
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && searchMode === "semantic")
+                      handleSemanticSearch();
+                  }}
+                />
+                {search && searchMode === "semantic" && (
+                  <button
+                    className="qa-clear-btn"
+                    type="button"
+                    aria-label="Clear semantic search"
+                    onClick={() => {
+                      setSearch("");
+                    }}
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
               {searchMode === "semantic" && (
                 <button
                   className="btn btn-ai search-semantic-btn"

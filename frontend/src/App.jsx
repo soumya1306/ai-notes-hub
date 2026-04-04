@@ -61,6 +61,15 @@ function NotesShell() {
     fetchNotes(debouncedSearch);
   }, [isAuthenticated, refreshAccessToken, debouncedSearch, searchMode]);
 
+  // When cleared in semantic mode, reload all notes
+  useEffect(() => {
+    if (!isAuthenticated || searchMode !== "semantic" || search !== "") return;
+    notesApi
+      .getNotes(refreshAccessToken, "")
+      .then((fetched) => setNotes(Array.isArray(fetched) ? fetched : []))
+      .catch(() => {});
+  }, [isAuthenticated, searchMode, search, refreshAccessToken]);
+
   useEffect(() => {
     if (!isAuthenticated || !accessToken) return;
     let alive = true;

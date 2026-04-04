@@ -27,19 +27,37 @@ export default function QAPanel() {
     }
   };
 
+  const handleClear = () => {
+    setQuestion("");
+    setAnswer(null);
+    setError(null);
+  };
+
   return (
     <div className="qa-panel">
       <h3 className="qa-title">💬 Ask Your Notes</h3>
       <div className="qa-input-row">
-        <input
-          className="search-input"
-          type="text"
-          placeholder="e.g What did I write about React hooks?"
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAsk()}
-          disabled={loading}
-        />
+        <div className="qa-input-wrapper">
+          <input
+            className="search-input"
+            type="text"
+            placeholder="e.g What did I write about React hooks?"
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleAsk()}
+            disabled={loading}
+          />
+          {question && (
+            <button
+              className="qa-clear-btn"
+              onClick={handleClear}
+              type="button"
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
         <button
           className="btn btn-ai"
           onClick={handleAsk}
