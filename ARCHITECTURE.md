@@ -1,3 +1,8 @@
+> **Status:** Production
+> **Last updated:** April 2026
+> **Author:** Soumya Acharya
+> **Live system:** https://ai-notes-hub-omega.vercel.app/
+
 # Architecture — AI Notes Hub
 
 ## Table of Contents
@@ -36,33 +41,22 @@ AI Notes Hub is a full-stack, AI-powered note-taking application. Users can crea
 
 ## 2. High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                        CLIENT (Browser)                         │
-│                    React 19 + Vite (SPA)                        │
-│              Hosted on Vercel (CDN edge network)                │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ HTTPS / WSS
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     BACKEND (Railway)                           │
-│              FastAPI + Uvicorn (async Python)                   │
-│         Dockerized — python:3.14-slim base image                │
-└──────┬────────────────────┬───────────────────┬─────────────────┘
-       │                    │                   │
-       ▼                    ▼                   ▼
-┌─────────────┐   ┌──────────────────┐  ┌─────────────────┐
-│  PostgreSQL │   │   Google Gemini  │  │   Cloudinary    │
-│  (Railway)  │   │   API (external) │  │   (external)    │
-│  pgvector   │   │  gemini-2.5-flash│  │  File storage   │
-│  pg17       │   │  embedding-001   │  │  images/PDF/vid │
-└─────────────┘   └──────────────────┘  └─────────────────┘
-                            
-                  ┌──────────────────┐
-                  │     Sentry       │
-                  │   (external)     │
-                  │ Error + Perf     │
-                  └──────────────────┘
+```mermaid
+graph TD
+    Browser["CLIENT — React 19 + Vite\nHosted on Vercel CDN"]
+    Backend["BACKEND — FastAPI + Uvicorn\nRailway · Dockerized · python:3.14-slim"]
+    PG["PostgreSQL 17\npgvector · Railway"]
+    Gemini["Google Gemini API\ngemini-2.5-flash · embedding-001"]
+    Cloudinary["Cloudinary\nFile Storage"]
+    Sentry["Sentry\nError + Performance"]
+
+    Browser -->|"HTTPS / WSS"| Backend
+    Backend --> PG
+    Backend --> Gemini
+    Backend --> Cloudinary
+    Backend --> Sentry
+    Browser --> Sentry
+
 ```
 
 **Request flow (happy path):**
@@ -80,7 +74,7 @@ AI Notes Hub is a full-stack, AI-powered note-taking application. Users can crea
 ### Stack
 - **React 19** — UI library with concurrent rendering
 - **Vite** — build tool with HMR and native ESM
-- **React Router v6** — client-side routing with `<Routes>` and `<Navigate>`
+- **React Router v7** — client-side routing with `<Routes>` and `<Navigate>`
 - **Context API** — global auth state (no Redux needed at this scale)
 - **TipTap** — headless rich text editor built on ProseMirror
 - **Vanilla CSS** — no CSS framework; full control over design
@@ -103,12 +97,53 @@ src/
 - **WebSocket state** lives in `useNoteSocket` hook — encapsulates connect, reconnect, and cleanup
 
 ### Token Refresh Strategy
+
+```mermaid
+sequenceDiagram
+    participant LS as localStorage
+    participant C as Component / API call
+    participant A as AuthContext
+    participant B as Backend (FastAPI)
+
+    Note over LS,B: --- On page load (silent restore) ---
+    A->>LS: read refresh_token
+    A->>B: POST /auth/refresh {refresh_token}
+    B-->>A: 200 {access_token: new, refresh_token: new}
+    A->>A: setAccessToken() in-memory (React state)
+    A->>LS: localStorage.setItem("refresh_token", new)
+
+    Note over LS,B: --- Normal API call ---
+    C->>B: request + Authorization: Bearer <access_token>
+    B-->>C: 200 OK
+
+    Note over LS,B: --- Access token expired ---
+    C->>B: request + Authorization: Bearer <expired_token>
+    B-->>C: 401 Unauthorized
+    C->>A: trigger refreshAccessToken()
+    A->>B: POST /auth/refresh {refresh_token from state}
+
+    alt refresh token valid
+        B-->>A: 200 {access_token: new, refresh_token: new}
+        A->>A: setAccessToken() in-memory
+        A->>LS: localStorage.setItem("refresh_token", new)
+        C->>B: retry original request + new Bearer token
+        B-->>C: 200 OK
+    else refresh token expired or revoked
+        B-->>A: 401 Unauthorized
+        A->>A: clear accessToken + refreshToken from state
+        A->>LS: localStorage.removeItem("refresh_token")
+        A->>C: redirect to /login
+    end
+```
+
 Every API call in `notesApi.js` wraps with a refresh interceptor:
 ```
-1. Make API call with current access token
-2. If 401 received → call /auth/refresh with refresh token (httpOnly cookie)
-3. Store new access token → retry original request once
-4. If refresh also fails → logout user
+1. Make API call with current access token from memory
+2. If 401 received → call POST /auth/refresh with refresh token in JSON body
+3. Receive new access token + new refresh token in response
+4. Update in-memory React state (AuthContext) with new access token
+5. Retry original request once with new access token
+6. If refresh also fails → logout user
 ```
 This pattern avoids token expiry interrupting the user experience silently.
 
@@ -126,7 +161,7 @@ This pattern avoids token expiry interrupting the user experience silently.
 ## 4. Backend Architecture
 
 ### Stack
-- **FastAPI** — async Python web framework with automatic OpenAPI docs
+- **FastAPI** — async Python web framework with automatic OpenAPI docs at `/docs` (Swagger UI)
 - **Uvicorn** — ASGI server running FastAPI
 - **SQLAlchemy 2.0** — async ORM with `AsyncSession`
 - **Pydantic v2** — request/response validation and serialization
@@ -134,19 +169,7 @@ This pattern avoids token expiry interrupting the user experience silently.
 - **slowapi** — rate limiting middleware (wraps `limits` library)
 
 ### Layered Architecture
-```
-HTTP Request
-     ↓
-Middleware layer     (CORS, SessionMiddleware, SecurityHeadersMiddleware, Sentry)
-     ↓
-Route handlers       (app/routes/*.py) — validates input, checks auth, delegates
-     ↓
-CRUD layer           (app/crud/*.py) — all database read/write logic
-     ↓
-Service layer        (app/services/*.py) — AI, Cloudinary, WebSocket manager
-     ↓
-Models + Database    (app/models/models.py + app/database.py)
-```
+`HTTP Request → Middleware → Route Handlers → CRUD → Service Layer → Models + Database`
 
 This separation means:
 - Routes never touch the DB directly — they always go through CRUD
@@ -164,6 +187,40 @@ This separation means:
 ```
 
 Alembic runs on every startup — this is safe because Alembic is idempotent (skips already-applied migrations).
+
+### Error Handling Strategy
+All API errors are surfaced as FastAPI `HTTPException` with a consistent JSON shape:
+```json
+{ "detail": "Note not found." }
+```
+- **404** — resource not found or permission denied (intentionally ambiguous to avoid enumeration)
+- **400** — bad input (e.g. email already registered)
+- **401** — invalid or expired JWT
+- **422** — Pydantic validation failure (automatic, includes field-level error detail)
+- **429** — rate limit exceeded (slowapi)
+
+Unhandled exceptions propagate to Sentry via `FastApiIntegration` and return a 500 to the client.
+
+### Testing Strategy
+
+```
+backend/app/tests/
+├── conftest.py          ← shared fixtures: async test client, isolated DB session
+├── unit/
+│   ├── test_crud_notes.py    ← CRUD functions tested against real async DB session
+│   └── test_ai_service.py   ← AI service tested with mocked google-genai client
+└── integration/
+    ├── test_auth_routes.py       ← register, login, refresh, Google OAuth flow
+    ├── test_notes_routes.py      ← full CRUD + permission enforcement
+    └── test_attachment_routes.py ← upload and delete via mocked Cloudinary
+```
+
+**Key testing patterns:**
+- `pytest-asyncio` with `asyncio_mode = "auto"` — all tests are `async def` with zero boilerplate
+- `httpx.AsyncClient` with FastAPI `app` as the ASGI transport — real HTTP dispatch without a running server
+- External services (Gemini, Cloudinary) are patched with `unittest.mock.patch` — tests never hit real APIs
+- `TEST_DATABASE_URL` env var points to a separate `ai_notes_hub_test` database — production data is never touched
+- `SENTRY_DSN` is set to `""` in CI — Sentry is silently disabled so test noise never hits the dashboard
 
 ### Async Database Session
 ```python
@@ -185,30 +242,50 @@ Sessions are scoped per-request and auto-closed after the response is sent.
 
 ### Schema
 
-```
-┌──────────────┐         ┌────────────────────┐         ┌──────────────────┐
-│    users     │         │       notes        │         │   attachments    │
-│──────────────│         │────────────────────│         │──────────────────│
-│ id (UUID PK) │◄───┐    │ id (UUID PK)       │◄───┐    │ id (UUID PK)     │
-│ email        │    │    │ content (TEXT)     │    │    │ note_id (FK)     │
-│ hashed_pass  │    │    │ tags (TEXT[])      │    │    │ user_id (FK)     │
-│ google_id    │    │    │ embedding (vec768) │    │    │ file_url         │
-│ refresh_token│    │    │ user_id (FK) ──────┘    │    │ public_id        │
-└──────────────┘    │    │ created_at         │    │    │ filename         │
-                    │    │ updated_at         │    │    │ file_type        │
-                    │    └────────────────────┘    │    │ created_at       │
-                    │                              │    └──────────────────┘
-                    │    ┌────────────────────┐    │
-                    │    │  note_permissions  │    │
-                    │    │────────────────────│    │
-                    │    │ id (UUID PK)       │    │
-                    └────┤ user_id (FK)       │    │
-                         │ note_id (FK) ──────┘    │
-                         │ role (owner/editor/     │
-                         │       viewer)           │
-                         │ created_at             │
-                         │ UNIQUE(note_id,user_id) │
-                         └────────────────────────┘
+```mermaid
+erDiagram
+    users {
+        UUID id PK
+        string email
+        string hashed_pass
+        string google_id
+        string refresh_token
+    }
+
+    notes {
+        UUID id PK
+        text content
+        text_array tags
+        vector768 embedding
+        UUID user_id FK
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    note_permissions {
+        UUID id PK
+        UUID user_id FK
+        UUID note_id FK
+        string role "owner | editor | viewer"
+        timestamp created_at
+    }
+
+    attachments {
+        UUID id PK
+        UUID note_id FK
+        UUID user_id FK
+        string file_url
+        string public_id
+        string filename
+        string file_type
+        timestamp created_at
+    }
+
+    users ||--o{ notes : "owns"
+    users ||--o{ note_permissions : "has"
+    users ||--o{ attachments : "uploads"
+    notes ||--o{ note_permissions : "grants"
+    notes ||--o{ attachments : "has"
 ```
 
 ### pgvector Index
@@ -231,23 +308,54 @@ CREATE INDEX ON notes USING hnsw (embedding vector_cosine_ops);
 ## 6. Authentication & Authorization
 
 ### JWT Strategy
-```
-Login / OAuth
-     ↓
-Issue access token (15 min expiry, HS256)
-   + refresh token (7 days expiry, stored in DB)
-     ↓
-Client stores access token in memory (not localStorage — XSS protection)
-     ↓
-Every request: Authorization: Bearer <access_token>
-     ↓
-On 401: POST /auth/refresh → new access token + new refresh token
-     ↓
-On refresh failure: force logout
+
+```mermaid
+sequenceDiagram
+    participant LS as localStorage
+    participant C as Client (React)
+    participant B as Backend (FastAPI)
+    participant DB as PostgreSQL
+
+    C->>B: POST /auth/login {email, password}
+    B->>DB: verify credentials
+    DB-->>B: user record
+    B->>DB: store refresh_token (7 day expiry)
+    B-->>C: {access_token (15min), refresh_token (7d)}
+    C->>C: setAccessToken() in-memory (React state)
+    C->>LS: localStorage.setItem("refresh_token")
+
+    Note over LS,B: --- Access token expired ---
+
+    C->>B: API request + Bearer <expired_token>
+    B-->>C: 401 Unauthorized
+    C->>B: POST /auth/refresh {refresh_token from state}
+    B->>DB: validate refresh_token matches stored value
+
+    alt refresh token valid + not expired
+        DB-->>B: match confirmed
+        B->>DB: store new refresh_token (old invalidated)
+        B-->>C: {access_token: new, refresh_token: new}
+        C->>C: setAccessToken() in-memory
+        C->>LS: localStorage.setItem("refresh_token", new)
+        C->>B: retry original request + new Bearer token
+        B-->>C: 200 OK
+    else refresh token expired (7d passed)
+        DB-->>B: token found but expired
+        B-->>C: 401 Unauthorized
+        C->>C: clear in-memory state
+        C->>LS: localStorage.removeItem("refresh_token")
+        C->>C: redirect to /login
+    else refresh token revoked (user logged out)
+        DB-->>B: refresh_token is NULL
+        B-->>C: 401 Unauthorized
+        C->>C: clear in-memory state
+        C->>LS: localStorage.removeItem("refresh_token")
+        C->>C: redirect to /login
+    end
 ```
 
 **Why not httpOnly cookies for access tokens?**
-Access tokens are stored in React state (in-memory). This protects against XSS since JavaScript can't steal what isn't in localStorage or cookies. The trade-off is tokens are lost on page refresh — handled by the refresh flow.
+Access tokens are stored in React state (in-memory). This protects against XSS since JavaScript can't steal what isn't in localStorage or cookies. The access token is lost on page refresh — silently restored on mount by reading the refresh token from localStorage and calling /auth/refresh automatically before the first render completes.
 
 ### Refresh Token Rotation
 Every `/auth/refresh` call:
@@ -258,6 +366,37 @@ Every `/auth/refresh` call:
 This means stolen refresh tokens can only be used once before they're rotated out.
 
 ### Google OAuth 2.0 Flow
+
+```mermaid
+sequenceDiagram
+    participant U as User (Browser)
+    participant FE as Frontend (React)
+    participant BE as Backend (FastAPI)
+    participant G as Google OAuth
+
+    U->>FE: Click "Continue with Google"
+    FE->>BE: GET /auth/google/login
+    BE-->>FE: 302 Redirect → Google consent URL
+    FE->>G: Browser follows redirect
+    G-->>U: Show consent screen
+    U->>G: Grant permission
+    G-->>BE: GET /auth/google/callback?code=...
+    BE->>G: Exchange code for profile
+    G-->>BE: { email, google_id, name }
+
+    alt Email already exists
+        BE->>BE: Link Google account to existing user
+    else New email
+        BE->>BE: Create new user record
+    end
+
+    BE->>BE: Issue access token (15min) + refresh token (7d)
+    BE-->>FE: 302 Redirect → /oauth-callback&#35;access_token=...
+    FE->>FE: OAuthCallback.jsx calls loginWithTokens()
+    FE-->>U: Redirect to / (notes page)
+
+```
+
 ```
 1. User clicks "Continue with Google"
 2. Frontend calls GET /auth/google/login
@@ -266,9 +405,14 @@ This means stolen refresh tokens can only be used once before they're rotated ou
 5. Backend exchanges code for Google profile
 6. If email exists → link Google account, issue tokens
 7. If email is new → create user, issue tokens
-8. Backend redirects to /oauth-callback?access_token=...&refresh_token=...
+8. Backend redirects to /oauth-callback#access_token=...&refresh_token=...
 9. OAuthCallback.jsx extracts tokens and calls loginWithTokens()
+
 ```
+> **Why `#` (fragment) and not `?` (query string)?**  
+> URL fragments are never sent to the server in HTTP requests and are not written to server access logs.  
+> A query string would expose the access token in Railway/Vercel access logs. Using `#` keeps the  
+> tokens entirely client-side — they exist only in the browser's memory after the redirect.
 
 ### Role-Based Access Control (RBAC)
 Every note operation checks the `note_permissions` table:
@@ -286,19 +430,7 @@ The owner is automatically inserted into `note_permissions` with role `owner` on
 ## 7. AI Pipeline
 
 ### Overview
-All AI features use **Google Gemini** via the `google-genai` Python SDK.
-
-```
-┌──────────────┐    ┌────────────────┐    ┌──────────────────────┐
-│  Note (HTML) │───▶│ BeautifulSoup4 │───▶│  Plain text content  │
-└──────────────┘    │  strip HTML    │    └──────────┬───────────┘
-                    └────────────────┘               │
-                                          ┌──────────▼───────────┐
-                                          │    Gemini API        │
-                                          │  gemini-2.5-flash    │
-                                          │  embedding-001       │
-                                          └──────────────────────┘
-```
+All AI features use **Google Gemini** via the `google-genai` Python SDK. Notes are stripped of HTML by BeautifulSoup4 before being sent — either to `gemini-2.5-flash` for generation tasks (summarize, tag) or to `gemini-embedding-001` for vector embedding.
 
 ### Summarization
 - **Model:** `gemini-2.5-flash`
@@ -320,33 +452,31 @@ All AI features use **Google Gemini** via the `google-genai` Python SDK.
 - **Stored in:** `notes.embedding` (pgvector `vector(768)` column)
 
 ### Semantic Search
-```
-User query string
-     ↓
-embed_text(query) → 768-dim vector
-     ↓
-SELECT notes ORDER BY embedding <=> query_vector LIMIT 10
-     ↓
-Return top-k most similar notes
+```mermaid
+flowchart TD
+    A[User types search query] --> B[embed_text query\ngemini-embedding-001]
+    B --> C[768-dim float vector]
+    C --> D[(pgvector\nHNSW index)]
+    D --> E["SELECT notes\nORDER BY embedding <=> query_vector\nLIMIT 10"]
+    E --> F[Top-k most similar notes returned]
+    F --> G[Results rendered in UI]
 ```
 `<=>` is pgvector's cosine distance operator. Lower value = more similar.
 
 ### RAG Q&A Pipeline
-```
-User question
-     ↓
-embed_text(question) → vector
-     ↓
-Top-5 most similar notes retrieved from pgvector
-     ↓
-Notes injected as context into Gemini prompt:
-  "Answer the question using only the notes below as context.
-   Question: {question}
-   Notes: {note_1} ... {note_5}"
-     ↓
-Gemini generates grounded answer
-     ↓
-Response returned to user
+```mermaid
+flowchart TD
+    A[User submits question] --> B[embed_text question\ngemini-embedding-001]
+    B --> C[768-dim float vector]
+    C --> D[(pgvector\nHNSW index)]
+    D --> E[Top-5 most similar notes retrieved]
+    E --> F[Notes injected as context\ninto Gemini prompt]
+    F --> G["Answer using ONLY\nthe notes below as context\nQuestion + Note_1...Note_5"]
+    G --> H[gemini-2.5-flash\ngenerates grounded answer]
+    H --> I[Response returned to user]
+
+    style F fill:#f0f0f0
+    style G fill:#f0f0f0
 ```
 
 RAG grounds the model's response in the user's actual notes, preventing hallucination and making answers personally relevant.
@@ -363,17 +493,21 @@ Two separate WebSocket channels:
 | Note room | `/ws/notes/{note_id}?token=` | Per-note live editing, typing indicators, presence |
 | User channel | `/ws/user?token=` | Per-user push notifications (e.g. note_shared) |
 
+> **Why `?token=` (query param) instead of an `Authorization` header?**  
+> The browser WebSocket API (`new WebSocket(url)`) does not allow setting custom headers — only the URL can be controlled at connect time. Passing the JWT as a query parameter is the standard pattern for WebSocket auth. The token is short-lived (15 min) and the endpoint validates it before accepting the connection, keeping the exposure window minimal.
+
 ### Connection Manager (`services/ws.py`)
 ```
 ConnectionManager
-├── rooms: dict[note_id → list[WebSocket]]   ← per-note connections
-└── user_channels: dict[user_id → WebSocket] ← per-user connection
+└── _rooms: dict[room_key → dict[user_id, WebSocket]]
+         ├── note rooms keyed by note_id         ← per-note editing
+         └── user rooms keyed by "user:{user_id}" ← per-user notifications
 
 Methods:
-├── connect(ws, note_id, user_id)
-├── disconnect(ws, note_id, user_id)
-├── broadcast(note_id, message, exclude=None)
-├── send_to_user(user_id, message)
+├── connect(note_id, user_id, ws)
+├── disconnect(note_id, user_id)
+├── broadcast(note_id, payload, exclude_user=None)
+├── presence(note_id) → list[user_id]
 └── close_room(note_id)
 ```
 
@@ -388,21 +522,21 @@ All messages are JSON with a `type` field:
 // Server → Client  
 { "type": "note_update", "content": "<p>...</p>", "tags": ["ai"], "user_email": "..." }
 { "type": "typing",      "user_email": "user@example.com" }
-{ "type": "presence",    "event": "join",  "user_email": "..." }
-{ "type": "presence",    "event": "leave", "user_email": "..." }
+{ "type": "presence",    "event": "joined",  "user_email": "..." }
+{ "type": "presence",    "event": "left",   "user_email": "..." }
 { "type": "note_shared", "note_id": "...", "role": "editor" }
 ```
 
 ### Reconnect Strategy
-The frontend (`useNoteSocket.js`) uses exponential-style reconnect:
+The frontend (`useNoteSocket.js`) uses true exponential backoff:
 ```
 WebSocket closes unexpectedly
      ↓
-Wait 3 seconds
+Wait BACKOFF[attempt] → [1s, 2s, 4s, 8s] (capped at 8s)
      ↓
-Reconnect (if component still mounted)
+Reconnect (if component still mounted), attempt++
 ```
-An `alive` ref guards against reconnecting after the component unmounts.
+An `alive` ref guards against reconnecting after the component unmounts. On successful reconnect `attempt` resets to 0 and any queued sends are flushed.
 
 ### 60-Second Fallback Poll
 In addition to WebSockets, `App.jsx` polls `GET /notes/` every 60 seconds as a safety net — catches any updates that the WebSocket may have missed (e.g. during a brief disconnect).
@@ -429,6 +563,12 @@ Backend saves { file_url, public_id, filename, file_type } to DB
      ↓
 Returns attachment metadata to client
 ```
+
+**File validation (enforced before upload):**
+- **Max size:** 10 MB — rejected with HTTP 413 if exceeded
+- **Allowed types:** `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `application/pdf`, `text/plain`, `video/mp4`, `video/quicktime` — rejected with HTTP 415 if not in the allowlist
+
+Validation runs on the raw bytes before any call to Cloudinary, so rejected files never consume API quota.
 
 **Why server-side uploads?**
 If the client uploaded directly to Cloudinary, the `API_SECRET` would need to be exposed in the browser — a critical security risk. Server-side signing keeps the secret in the backend environment only.
@@ -458,7 +598,7 @@ Internet
 Vercel / Railway (TLS termination — HTTPS/WSS enforced)
    ↓
 SecurityHeadersMiddleware
-   ├── Strict-Transport-Security (HSTS) — force HTTPS for 1 year
+   ├── Strict-Transport-Security (HSTS) — max-age=31536000, force HTTPS for 1 year
    ├── X-Content-Type-Options: nosniff — prevent MIME sniffing
    ├── X-Frame-Options: DENY — prevent clickjacking
    ├── Referrer-Policy: strict-origin-when-cross-origin
@@ -475,6 +615,7 @@ Rate limiting (slowapi) — per-endpoint token buckets
    ↓
 PostgreSQL — parameterized queries via SQLAlchemy (no SQL injection)
 ```
+> **Note on Content Security Policy (CSP):** A strict CSP header is deliberately not set in the backend middleware because Vercel injects CDN-level CSP headers for the frontend. The FastAPI backend serves only API JSON responses, so CSP is not applicable there. For a future SSR deployment, a backend-set CSP would be added.
 
 ### Rate Limiting Table
 
@@ -506,7 +647,7 @@ GitHub (source of truth)
       │         └── ❌ does NOT block Railway/Vercel deploys
       │
       ├──▶ Railway (backend)
-      │         └── detects push to main
+      │         └── auto-deploys on push to main (independent of CI)
       │         └── reads railway.json → builder: DOCKERFILE
       │         └── builds backend/Dockerfile
       │         └── runs: uvicorn main:app --host 0.0.0.0 --port 8000
@@ -529,8 +670,12 @@ services:
 
   backend:
     build: ./backend
-    depends_on: [db]
-    env_file: backend/.env
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file: ./backend/.env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@db:5432/ai_notes_hub
 ```
 
 The `db` service uses a named volume so data persists across `docker compose down` / `up` cycles.
@@ -557,13 +702,15 @@ The `db` service uses a named volume so data persists across `docker compose dow
 ### Sentry Backend (`sentry-sdk[fastapi]`)
 - **FastApiIntegration** — automatically captures unhandled exceptions per request, records HTTP method, URL, status code
 - **SqlalchemyIntegration** — traces slow DB queries, captures query errors
-- **traces_sample_rate: 1.0** — 100% of transactions traced in dev; reduce to 0.1 in high-traffic production
+- **traces_sample_rate: 1.0** — 100% of transactions traced on the backend
 - **send_default_pii: False** — GDPR-safe; no user emails or IPs sent to Sentry by default
 - **APP_ENV** tag — separates `development` vs `production` issues in Sentry dashboard
 
 ### Sentry Frontend (`@sentry/react`)
 - **browserTracingIntegration** — captures page load performance, navigation timing, and API call durations
 - **replayIntegration** — records session replays on errors (text masked, media blocked for privacy)
+- **tracesSampleRate: 0.1** — 10% of frontend transactions traced (reduced to limit overhead)
+- **replaysSessionSampleRate: 0.1** — 10% of normal sessions recorded
 - **replaysOnErrorSampleRate: 1.0** — always capture a replay when an error occurs
 - **ErrorBoundary** — wraps entire app; catches React render errors, reports to Sentry, shows fallback UI
 
@@ -604,3 +751,13 @@ localStorage is accessible to any JavaScript on the page — a successful XSS at
 
 ### Why Alembic auto-migrate on startup?
 Railway doesn't support running pre-deploy scripts natively without a custom entrypoint. Running `alembic upgrade head` in `main.py` at startup guarantees the schema is always up-to-date before the first request is served. The operation is idempotent — it's a no-op if all migrations are already applied.
+
+### Horizontal Scaling Trade-offs
+The current single-instance deployment has two components that would need to change before the backend can scale horizontally:
+
+| Component | Current | At scale |
+|-----------|---------|----------|
+| WebSocket `ConnectionManager` | In-process Python dict — rooms are not shared across instances | Replace with Redis Pub/Sub so any instance can broadcast to any room |
+| slowapi rate limiter | In-memory per-instance counters | Replace with Redis-backed storage so limits are enforced globally |
+
+For a single Railway container (the current deployment), both in-memory approaches are correct and have zero infrastructure overhead. These are intentional trade-offs documented here so the path to scaling is clear.

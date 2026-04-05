@@ -2164,7 +2164,6 @@ body {
 
 /* Mobile layout: opaque background covers the body gradient */
 .mobile-layout {
-  min-height: 100dvh;
   background: var(--color-slate-50);
   display: flex;
   flex-direction: column;
@@ -2289,6 +2288,13 @@ body {
   body {
     padding: 0;
     background: var(--gradient-body);
+  }
+
+  /* ── Code blocks in note preview: scroll horizontally instead of expanding the card ── */
+  .tiptap-output pre {
+    width: 0;
+    min-width: 100%;
+    overflow-x: auto;
   }
 
   .app-container {

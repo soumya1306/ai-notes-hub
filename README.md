@@ -29,7 +29,7 @@ Backend API Docs: https://ai-notes-hub-backend-production.up.railway.app/docs
 
 | Layer      | Tech                                                                                     |
 |------------|------------------------------------------------------------------------------------------|
-| Frontend   | React 19, Vite, Vanilla CSS (design token system), React Router v6, TipTap, react-icons |
+| Frontend   | React 19, Vite, Vanilla CSS (design token system), React Router v7, TipTap, react-icons |
 | Backend    | FastAPI, Pydantic v2, Python 3.14, Uvicorn                                               |
 | Database   | PostgreSQL 17, SQLAlchemy 2.0 (async), pgvector, Alembic                                 |
 | Auth       | JWT (PyJWT), bcrypt, refresh token rotation, Google OAuth 2.0 (Authlib 1.6.8)           |
